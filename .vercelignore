@@ -1,0 +1,39 @@
+# ============================================
+# Vercel Deployment — Exclude large/unnecessary files
+# ============================================
+
+# Training data (not needed at runtime)
+data/severstal-steel-defect-detection/
+data/faiss_gallery/
+
+# PyTorch model (replaced by ONNX at runtime)
+saved_models/resnet50_classifier.pth
+saved_models/training_history.json
+saved_models/training_history.png
+saved_models/confusion_matrix.png
+
+# Training / offline scripts
+scripts/
+ml_pipeline/classifier/train.py
+ml_pipeline/classifier/evaluate.py
+ml_pipeline/retrieval/embeddings.py
+ml_pipeline/retrieval/index_builder.py
+ml_pipeline/data/dataloader.py
+
+# Virtual env / caches
+venv/
+.venv/
+__pycache__/
+
+# Logs / reports
+*.log
+reports/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Database (use DATABASE_URL on Vercel)
+db.sqlite3

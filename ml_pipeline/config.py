@@ -91,11 +91,21 @@ EMBEDDING_DIM = 2048  # ResNet50 avgpool output
 FAISS_TOP_K = 5
 
 # ──────────────────────────────────────────────
+# ONNX model artifacts (for deployment / inference)
+# ──────────────────────────────────────────────
+ONNX_MODEL_PATH = SAVED_MODELS_DIR / "resnet50_classifier.onnx"
+ONNX_FEATURES_PATH = SAVED_MODELS_DIR / "resnet50_features.onnx"
+ONNX_ACTIVATIONS_PATH = SAVED_MODELS_DIR / "resnet50_activations.onnx"
+
+# ──────────────────────────────────────────────
 # Device
 # ──────────────────────────────────────────────
-import torch
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+try:
+    import torch
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+except ImportError:
+    # PyTorch not installed (e.g. Vercel deployment using ONNX Runtime)
+    DEVICE = "cpu"
 
 # ──────────────────────────────────────────────
 # Ensure directories exist

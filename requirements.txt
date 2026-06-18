@@ -1,11 +1,12 @@
 # ============================================
 # Smart Quality Inspection Platform
-# Requirements - CPU Deployment
+# Requirements — Vercel / Production (Lightweight)
 # ============================================
+# For local development with PyTorch training,
+# use: pip install -r requirements-full.txt
 
-# --- Core ML (CPU-optimized) ---
-torch>=2.0.0+cpu
-torchvision>=0.15.0+cpu
+# --- ML Inference (ONNX Runtime — ~50 MB vs ~2.5 GB for PyTorch) ---
+onnxruntime>=1.17.0
 scikit-learn>=1.3.0
 pandas>=2.0.0
 numpy>=1.24.0

@@ -26,6 +26,9 @@ data/*
 !data/faiss_gallery/**
 saved_models/*
 !saved_models/resnet50_classifier.pth
+!saved_models/resnet50_classifier.onnx
+!saved_models/resnet50_features.onnx
+!saved_models/resnet50_activations.onnx
 faiss_index/*
 !faiss_index/defect_index.faiss
 !faiss_index/index_metadata.json
