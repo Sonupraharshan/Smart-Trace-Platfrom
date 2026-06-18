@@ -6,11 +6,19 @@
 data/severstal-steel-defect-detection/
 data/faiss_gallery/
 
+# Media uploads (user test uploads, not needed at build/deploy)
+media/uploads/
+media/gradcam_outputs/
+
 # PyTorch model (replaced by ONNX at runtime)
 saved_models/resnet50_classifier.pth
 saved_models/training_history.json
 saved_models/training_history.png
 saved_models/confusion_matrix.png
+
+# Unused ONNX models (we only use resnet50_activations.onnx)
+saved_models/resnet50_classifier.onnx
+saved_models/resnet50_features.onnx
 
 # Training / offline scripts
 scripts/

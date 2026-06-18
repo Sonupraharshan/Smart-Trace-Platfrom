@@ -73,7 +73,7 @@ class InferenceEngine:
         """Load ML models — prefer ONNX, fall back to PyTorch."""
 
         # ── Try ONNX first ──
-        if ONNX_ACTIVATIONS_PATH.exists() and ONNX_FEATURES_PATH.exists():
+        if ONNX_ACTIVATIONS_PATH.exists():
             self._load_onnx()
             return
 
@@ -98,17 +98,6 @@ class InferenceEngine:
         self._activations_session = ort.InferenceSession(
             str(ONNX_ACTIVATIONS_PATH), providers=providers
         )
-
-        # Features model (embeddings for FAISS)
-        self._features_session = ort.InferenceSession(
-            str(ONNX_FEATURES_PATH), providers=providers
-        )
-
-        # Classifier model (optional, activations model can also provide logits)
-        if ONNX_MODEL_PATH.exists():
-            self._classifier_session = ort.InferenceSession(
-                str(ONNX_MODEL_PATH), providers=providers
-            )
 
         self.backend = "onnx"
         self._model_loaded = True
@@ -266,7 +255,7 @@ class InferenceEngine:
             severity_info = estimate_severity_from_gradcam(cam_map, threshold=0.5)
 
         # 4. Similarity retrieval
-        embedding = self._extract_embedding_onnx(input_tensor)
+        embedding = np.mean(activations, axis=(2, 3))
         similar_images = self.search_engine.find_similar(embedding)
 
         return {
@@ -285,9 +274,9 @@ class InferenceEngine:
         }
 
     def _extract_embedding_onnx(self, input_tensor: np.ndarray) -> np.ndarray:
-        """Extract feature embedding using ONNX features model."""
-        result = self._features_session.run(None, {"input": input_tensor})
-        return result[0]  # shape (1, 2048)
+        """Extract feature embedding using ONNX activations model (average pooling of activations)."""
+        logits, activations = self._activations_session.run(None, {"input": input_tensor})
+        return np.mean(activations, axis=(2, 3))
 
     def extract_embedding(self, image_path: str) -> np.ndarray:
         """
