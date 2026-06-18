@@ -151,32 +151,22 @@ def root_cause_analysis(request, inspection_id):
         engine = get_inference_engine()
 
         if engine.search_engine.is_loaded:
-            # Extract embedding from the inspected image
-            import cv2
-            from ml_pipeline.data.augmentations import get_val_transforms
+            # Extract embedding from the inspected image using the unified engine
+            embedding = engine.extract_embedding(inspection.image_path)
+            similar_images = engine.search_engine.find_similar(embedding)
 
-            image = cv2.imread(inspection.image_path)
-            if image is not None:
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                transform = get_val_transforms()
-                augmented = transform(image=image)
-                import torch
-                image_tensor = augmented["image"].unsqueeze(0).to(engine.device)
-                embedding = engine._extract_embedding(image_tensor)
-                similar_images = engine.search_engine.find_similar(embedding)
-
-                # Add media URLs for similar images
-                for sim in similar_images:
-                    # Copy similar images to media for serving
-                    sim_path = Path(sim["image_path"])
-                    if sim_path.exists():
-                        sim["image_url"] = f"{settings.MEDIA_URL}uploads/{sim['image_id']}"
-                        # Ensure it can be served — copy to media if needed
-                        dest = Path(settings.MEDIA_ROOT) / "uploads" / sim["image_id"]
-                        if not dest.exists():
-                            import shutil
-                            dest.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(str(sim_path), str(dest))
+            # Add media URLs for similar images
+            for sim in similar_images:
+                # Copy similar images to media for serving
+                sim_path = Path(sim["image_path"])
+                if sim_path.exists():
+                    sim["image_url"] = f"{settings.MEDIA_URL}uploads/{sim['image_id']}"
+                    # Ensure it can be served — copy to media if needed
+                    dest = Path(settings.MEDIA_ROOT) / "uploads" / sim["image_id"]
+                    if not dest.exists():
+                        import shutil
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(str(sim_path), str(dest))
 
     except Exception as e:
         messages.warning(request, f"Similarity search unavailable: {str(e)}")

@@ -16,9 +16,13 @@ saved_models/confusion_matrix.png
 scripts/
 ml_pipeline/classifier/train.py
 ml_pipeline/classifier/evaluate.py
+ml_pipeline/classifier/model.py
 ml_pipeline/retrieval/embeddings.py
 ml_pipeline/retrieval/index_builder.py
 ml_pipeline/data/dataloader.py
+ml_pipeline/data/dataset.py
+ml_pipeline/data/preprocessing.py
+requirements-full.txt
 
 # Virtual env / caches
 venv/

@@ -289,6 +289,32 @@ class InferenceEngine:
         result = self._features_session.run(None, {"input": input_tensor})
         return result[0]  # shape (1, 2048)
 
+    def extract_embedding(self, image_path: str) -> np.ndarray:
+        """
+        Extract feature embedding for a given image path using the active backend.
+
+        Args:
+            image_path: Path to the image file
+
+        Returns:
+            Feature embedding vector as a numpy array of shape (1, 2048) or (2048,)
+        """
+        original_image = cv2.imread(image_path)
+        if original_image is None:
+            raise FileNotFoundError(f"Cannot read image: {image_path}")
+        original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
+        if self.backend == "onnx":
+            from ml_pipeline.data.augmentations import preprocess_image_numpy
+            input_tensor = preprocess_image_numpy(original_image)
+            return self._extract_embedding_onnx(input_tensor)
+        elif self.backend == "pytorch":
+            augmented = self._pt_transform(image=original_image)
+            image_tensor = augmented["image"].unsqueeze(0).to(self._pt_device)
+            return self._extract_embedding_pytorch(image_tensor)
+        else:
+            raise RuntimeError("No ML backend loaded.")
+
     # ──────────────────────────────────────────
     # PyTorch inference path (fallback)
     # ──────────────────────────────────────────
