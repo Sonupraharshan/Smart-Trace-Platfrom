@@ -20,7 +20,7 @@ db.sqlite3
 staticfiles/
 media/
 
-# Project-generated artifacts
+# Project-generated artifacts - KEEP ESSENTIALS FOR DEPLOYMENT
 data/*
 !data/faiss_gallery/
 !data/faiss_gallery/**

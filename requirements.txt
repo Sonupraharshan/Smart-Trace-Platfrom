@@ -1,11 +1,11 @@
 # ============================================
 # Smart Quality Inspection Platform
-# Requirements
+# Requirements - CPU Deployment
 # ============================================
 
-# --- Core ML ---
-torch>=2.0.0
-torchvision>=0.15.0
+# --- Core ML (CPU-optimized) ---
+torch>=2.0.0+cpu
+torchvision>=0.15.0+cpu
 scikit-learn>=1.3.0
 pandas>=2.0.0
 numpy>=1.24.0
