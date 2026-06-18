@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: smart-trace-platform
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: smart-trace-platform.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://smart-trace-platform.onrender.com
+      - key: PYTHON_VERSION
+        value: 3.12.1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-trace-db
+          property: connectionString
+
+databases:
+  - name: smart-trace-db
+    plan: starter

@@ -1,0 +1,259 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Executive Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card blue">
+    <div class="kpi-header">
+      <span class="kpi-label">Total Inspected</span>
+      <div class="kpi-icon"><i class="bi bi-eye"></i></div>
+    </div>
+    <div class="kpi-value">{{ kpis.total_inspected }}</div>
+    <div class="kpi-subtitle">Images processed</div>
+  </div>
+
+  <div class="kpi-card emerald">
+    <div class="kpi-header">
+      <span class="kpi-label">Pass Rate</span>
+      <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+    </div>
+    <div class="kpi-value">{{ kpis.pass_rate }}%</div>
+    <div class="kpi-subtitle">{{ kpis.non_defective_count }} passed</div>
+  </div>
+
+  <div class="kpi-card red">
+    <div class="kpi-header">
+      <span class="kpi-label">Defect Rate</span>
+      <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+    </div>
+    <div class="kpi-value">{{ kpis.defect_rate }}%</div>
+    <div class="kpi-subtitle">{{ kpis.defective_count }} defective</div>
+  </div>
+
+  <div class="kpi-card amber">
+    <div class="kpi-header">
+      <span class="kpi-label">Avg Severity</span>
+      <div class="kpi-icon"><i class="bi bi-thermometer-half"></i></div>
+    </div>
+    <div class="kpi-value">{{ kpis.avg_severity }}%</div>
+    <div class="kpi-subtitle">Area affected</div>
+  </div>
+
+  <div class="kpi-card purple">
+    <div class="kpi-header">
+      <span class="kpi-label">Most Common Defect</span>
+      <div class="kpi-icon"><i class="bi bi-bullseye"></i></div>
+    </div>
+    <div class="kpi-value" style="font-size: 1.1rem">
+      {{ kpis.most_common_defect }}
+    </div>
+    <div class="kpi-subtitle">
+      {{ kpis.most_common_defect_count }} occurrences
+    </div>
+  </div>
+
+  <div class="kpi-card cyan">
+    <div class="kpi-header">
+      <span class="kpi-label">Avg Confidence</span>
+      <div class="kpi-icon"><i class="bi bi-graph-up"></i></div>
+    </div>
+    <div class="kpi-value">{{ kpis.avg_confidence|floatformat:2 }}</div>
+    <div class="kpi-subtitle">Model certainty</div>
+  </div>
+</div>
+
+<!-- Gauges Row -->
+<div class="charts-grid">
+  <div class="content-card">
+    <div class="card-header">
+      <h3><i class="bi bi-speedometer2"></i> Quality Score</h3>
+    </div>
+    <div class="card-body">
+      <div
+        id="quality-gauge"
+        class="chart-container"
+        style="min-height: 220px"
+      ></div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="card-header">
+      <h3><i class="bi bi-shield-exclamation"></i> Risk Score</h3>
+    </div>
+    <div class="card-body">
+      <div
+        id="risk-gauge"
+        class="chart-container"
+        style="min-height: 220px"
+      ></div>
+    </div>
+  </div>
+</div>
+
+<!-- Distribution Charts -->
+<div class="charts-grid">
+  <div class="content-card">
+    <div class="card-header">
+      <h3><i class="bi bi-pie-chart"></i> Defect Distribution</h3>
+    </div>
+    <div class="card-body">
+      <div id="defect-chart" class="chart-container"></div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="card-header">
+      <h3><i class="bi bi-bar-chart"></i> Severity Distribution</h3>
+    </div>
+    <div class="card-body">
+      <div id="severity-chart" class="chart-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Insights Panel -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="bi bi-lightbulb"></i>Insights</h3>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <ul class="insights-list">
+      {% for insight in insights %}
+      <li>{{ insight }}</li>
+      {% empty %}
+      <li>No inspection data available. Upload images to begin analysis.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- Recent Inspections Table -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="bi bi-clock-history"></i> Recent Inspections</h3>
+    <a
+      href="{% url 'dashboard:inspection_workspace' %}"
+      class="btn btn-sm btn-outline-custom"
+    >
+      <i class="bi bi-plus"></i> New Inspection
+    </a>
+  </div>
+  <div class="card-body" style="padding: 0">
+    <div class="table-responsive">
+      <table class="table table-dark mb-0">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+            <th>Severity</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_inspections %}
+          <tr>
+            <td>{{ item.image_name|truncatechars:30 }}</td>
+            <td>
+              {% if item.is_defective %}
+              <span class="result-badge defective"
+                ><i class="bi bi-x-circle-fill"></i> {{ item.defect_label
+                }}</span
+              >
+              {% else %}
+              <span class="result-badge no-defect"
+                ><i class="bi bi-check-circle-fill"></i> No Defect</span
+              >
+              {% endif %}
+            </td>
+            <td>{{ item.confidence|floatformat:2 }}</td>
+            <td>
+              <span
+                class="severity-badge severity-{% if item.severity_category == 'High' %}high{% elif item.severity_category == 'Medium' %}medium{% elif item.severity_category == 'Low' %}low{% else %}none{% endif %}"
+              >
+                {{ item.severity_category }}
+              </span>
+            </td>
+            <td>{{ item.inspected_at|timesince }} ago</td>
+            <td>
+              <a
+                href="{% url 'dashboard:root_cause_analysis' item.id %}"
+                class="btn btn-sm btn-outline-custom"
+              >
+                <i class="bi bi-search"></i> Analyze
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td
+              colspan="6"
+              class="text-center py-4"
+              style="color: var(--text-muted)"
+            >
+              No inspections yet.
+              <a href="{% url 'dashboard:inspection_workspace' %}"
+                >Upload your first image</a
+              >.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ kpis.quality_score|json_script:"data-quality-score" }}
+{{ kpis.risk_score|json_script:"data-risk-score" }}
+{{ defect_dist_labels|json_script:"data-defect-labels" }}
+{{ defect_dist_values|json_script:"data-defect-values" }}
+{{ severity_dist_labels|json_script:"data-sev-labels" }}
+{{ severity_dist_values|json_script:"data-sev-values" }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var qualityScore = JSON.parse(
+      document.getElementById("data-quality-score").textContent,
+    );
+    var riskScore = JSON.parse(
+      document.getElementById("data-risk-score").textContent,
+    );
+    var defectLabels = JSON.parse(
+      document.getElementById("data-defect-labels").textContent,
+    );
+    var defectValues = JSON.parse(
+      document.getElementById("data-defect-values").textContent,
+    );
+    var sevLabels = JSON.parse(
+      document.getElementById("data-sev-labels").textContent,
+    );
+    var sevValues = JSON.parse(
+      document.getElementById("data-sev-values").textContent,
+    );
+
+    renderGauge("quality-gauge", qualityScore, "Quality Score");
+    renderGauge("risk-gauge", riskScore, "Risk Score");
+    renderDonutChart(
+      "defect-chart",
+      defectLabels,
+      defectValues,
+      "Defect Type Distribution",
+    );
+    renderDonutChart(
+      "severity-chart",
+      sevLabels,
+      sevValues,
+      "Severity Distribution",
+    );
+  });
+</script>
+{% endblock %}

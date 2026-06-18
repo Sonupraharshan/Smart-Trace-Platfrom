@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Local environment/secrets
+.env
+.env.*
+.env.example
+
+# Django local/generated files
+db.sqlite3
+staticfiles/
+media/
+
+# Project-generated artifacts
+data/*
+!data/faiss_gallery/
+!data/faiss_gallery/**
+saved_models/*
+!saved_models/resnet50_classifier.pth
+faiss_index/*
+!faiss_index/defect_index.faiss
+!faiss_index/index_metadata.json
+reports/
+*.log
+training*.log
+runserver*.log
+
+# Test/cache/build output
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

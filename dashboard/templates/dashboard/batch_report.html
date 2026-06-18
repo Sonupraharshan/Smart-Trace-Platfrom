@@ -1,0 +1,211 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Batch Inspection{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+    <!-- Upload Panel -->
+    <div class="col-lg-4">
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-collection"></i> Batch Upload</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" data-loading="Processing batch... This may take a few minutes.">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Batch Name</label>
+                        {{ form.batch_name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Images</label>
+                        <div class="upload-zone" style="padding: 24px;">
+                            <div class="upload-icon" style="font-size: 2rem;">
+                                <i class="bi bi-images"></i>
+                            </div>
+                            <div class="upload-text" style="font-size: 0.9rem;">Select multiple images</div>
+                            <div class="mt-2">
+                                {{ form.images }}
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-play-fill"></i> Run Batch Inspection
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Previous Reports -->
+        <div class="content-card mt-3">
+            <div class="card-header">
+                <h3><i class="bi bi-clock-history"></i> Previous Reports</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <ul class="batch-reports-list">
+                    {% for batch in previous_batches %}
+                    <li>
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.85rem;">{{ batch.batch_name }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                {{ batch.total_images }} images • {{ batch.created_at|timesince }} ago
+                            </div>
+                        </div>
+                        <a href="{% url 'dashboard:batch_detail' batch.id %}" class="btn btn-sm btn-outline-custom">
+                            View
+                        </a>
+                    </li>
+                    {% empty %}
+                    <li style="justify-content: center;">
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">No batch reports yet</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="col-lg-8">
+        {% if batch_result and not batch_result.error %}
+        <!-- Batch KPIs -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi-card blue">
+                <div class="kpi-header">
+                    <span class="kpi-label">Total Images</span>
+                    <div class="kpi-icon"><i class="bi bi-images"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.total_images }}</div>
+            </div>
+
+            <div class="kpi-card emerald">
+                <div class="kpi-header">
+                    <span class="kpi-label">Passed</span>
+                    <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.passed_images }}</div>
+            </div>
+
+            <div class="kpi-card red">
+                <div class="kpi-header">
+                    <span class="kpi-label">Failed</span>
+                    <div class="kpi-icon"><i class="bi bi-x-circle"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.failed_images }}</div>
+            </div>
+        </div>
+
+        <!-- Batch Metrics -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi-card amber">
+                <div class="kpi-header">
+                    <span class="kpi-label">Avg Severity</span>
+                    <div class="kpi-icon"><i class="bi bi-thermometer-half"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.avg_severity }}%</div>
+            </div>
+
+            <div class="kpi-card cyan">
+                <div class="kpi-header">
+                    <span class="kpi-label">Quality Score</span>
+                    <div class="kpi-icon"><i class="bi bi-speedometer2"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.quality_score }}%</div>
+            </div>
+
+            <div class="kpi-card purple">
+                <div class="kpi-header">
+                    <span class="kpi-label">Defect Rate</span>
+                    <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                </div>
+                <div class="kpi-value">{{ batch_result.defect_rate }}%</div>
+            </div>
+        </div>
+
+        <!-- Batch Charts -->
+        <div class="charts-grid">
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="bi bi-pie-chart"></i> Defect Distribution</h3>
+                </div>
+                <div class="card-body">
+                    <div id="batch-defect-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="bi bi-bar-chart"></i> Severity Distribution</h3>
+                </div>
+                <div class="card-body">
+                    <div id="batch-severity-chart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Report -->
+        {% if batch_result.report_path %}
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-file-earmark-spreadsheet"></i> Inspection Report</h3>
+            </div>
+            <div class="card-body text-center py-4">
+                <i class="bi bi-file-earmark-check" style="font-size: 2.5rem; color: var(--accent-emerald); opacity: 0.7;"></i>
+                <p class="mt-2 mb-3" style="color: var(--text-secondary);">
+                    Report generated with {{ batch_result.total_images }} image results.
+                </p>
+                <p class="small" style="color: var(--text-muted);">
+                    Saved to: <code>{{ batch_result.report_path }}</code>
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% elif batch_result.error %}
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-exclamation-triangle"></i> Error</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-danger">{{ batch_result.error }}</p>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="content-card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-collection" style="font-size: 4rem; color: var(--text-muted); opacity: 0.3;"></i>
+                <h4 class="mt-3" style="color: var(--text-secondary);">No Batch Results</h4>
+                <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto;">
+                    Upload multiple steel surface images to run batch inspection.
+                    Results will include defect distribution, severity analysis, and quality metrics.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if batch_result and not batch_result.error %}
+{{ batch_result.defect_dist_labels|json_script:"data-defect-labels" }}
+{{ batch_result.defect_dist_values|json_script:"data-defect-values" }}
+{{ batch_result.severity_dist_labels|json_script:"data-sev-labels" }}
+{{ batch_result.severity_dist_values|json_script:"data-sev-values" }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var defectLabels = JSON.parse(document.getElementById('data-defect-labels').textContent);
+        var defectValues = JSON.parse(document.getElementById('data-defect-values').textContent);
+        var sevLabels    = JSON.parse(document.getElementById('data-sev-labels').textContent);
+        var sevValues    = JSON.parse(document.getElementById('data-sev-values').textContent);
+
+        renderDonutChart('batch-defect-chart', defectLabels, defectValues, 'Defect Types');
+        renderDonutChart('batch-severity-chart', sevLabels, sevValues, 'Severity Levels');
+    });
+</script>
+{% endif %}
+{% endblock %}

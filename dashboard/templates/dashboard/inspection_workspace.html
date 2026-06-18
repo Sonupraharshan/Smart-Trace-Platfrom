@@ -1,0 +1,184 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Inspection Workspace{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+    <!-- Upload Panel -->
+    <div class="col-lg-{% if result %}5{% else %}12{% endif %}">
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-upload"></i> Upload Image</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" data-loading="Analyzing image... Running defect classification, severity estimation, and Grad-CAM">
+                    {% csrf_token %}
+                    <div class="upload-zone" id="upload-zone">
+                        <div class="upload-icon">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <div class="upload-text">Drop steel surface image here or click to browse</div>
+                        <div class="upload-hint">Supports JPG, PNG — Max 10 MB</div>
+                        <div class="mt-3">
+                            {{ form.image }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom w-100 mt-3" id="inspect-btn">
+                        <i class="bi bi-search"></i> Run Inspection
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if result and not result.error %}
+        <!-- Quick Actions -->
+        <div class="content-card mt-3">
+            <div class="card-header">
+                <h3><i class="bi bi-lightning-charge"></i> Actions</h3>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'dashboard:root_cause_analysis' result.inspection_id %}"
+                   class="btn btn-outline-custom w-100 mb-2">
+                    <i class="bi bi-diagram-3"></i> Root Cause Analysis
+                </a>
+                <a href="{% url 'dashboard:executive_dashboard' %}"
+                   class="btn btn-outline-custom w-100">
+                    <i class="bi bi-grid-1x2"></i> View Dashboard
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if result and not result.error %}
+    <!-- Results Panel -->
+    <div class="col-lg-7">
+        <!-- Prediction Summary -->
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-cpu"></i> Inspection Results</h3>
+                {% if result.is_defective %}
+                <span class="result-badge defective">
+                    <i class="bi bi-x-circle-fill"></i> DEFECT DETECTED
+                </span>
+                {% else %}
+                <span class="result-badge no-defect">
+                    <i class="bi bi-check-circle-fill"></i> PASS
+                </span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="result-grid">
+                    <!-- Images -->
+                    <div class="result-image-panel">
+                        <div>
+                            <label class="form-label mb-2">Uploaded Image</label>
+                            <img src="{{ result.uploaded_image_url }}" alt="Uploaded steel surface image">
+                        </div>
+                        {% if result.gradcam_url %}
+                        <div>
+                            <label class="form-label mb-2">Grad-CAM Explanation (Heatmap / Overlay)</label>
+                            <img src="{{ result.gradcam_url }}" alt="Grad-CAM visualization showing defect regions">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Details -->
+                    <div class="result-details-panel">
+                        <div class="detail-row">
+                            <span class="detail-label">Prediction</span>
+                            <span class="detail-value">{{ result.defect_label }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Confidence</span>
+                            <span class="detail-value">
+                                {{ result.confidence|floatformat:4 }}
+                                <div class="confidence-bar mt-1">
+                                    <div class="confidence-bar-fill"
+                                         data-confidence="{{ result.confidence|multiply:100 }}"
+                                         data-conf-color="{% if result.confidence >= 0.9 %}var(--accent-emerald){% elif result.confidence >= 0.7 %}var(--accent-amber){% else %}var(--accent-red){% endif %}">
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Severity</span>
+                            <span class="detail-value">
+                                <span class="severity-badge severity-{% if result.severity_category == 'High' %}high{% elif result.severity_category == 'Medium' %}medium{% elif result.severity_category == 'Low' %}low{% else %}none{% endif %}">
+                                    {{ result.severity_category }}
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Severity Score</span>
+                            <span class="detail-value">{{ result.severity_score }}%</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Defect Area</span>
+                            <span class="detail-value">{{ result.defect_area_pct }}%</span>
+                        </div>
+
+                        <!-- Probabilities -->
+                        {% if result.all_probabilities %}
+                        <div class="mt-3">
+                            <label class="form-label">Class Probabilities</label>
+                            <div id="prob-chart" style="height: 200px;"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif result.error %}
+    <div class="col-lg-7">
+        <div class="content-card">
+            <div class="card-header">
+                <h3><i class="bi bi-exclamation-triangle"></i> Error</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-danger">{{ result.error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if result and result.all_probabilities %}
+{{ result.all_probabilities|json_script:"data-probs" }}
+{{ result.predicted_class|json_script:"data-pred-class" }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var probs         = JSON.parse(document.getElementById('data-probs').textContent);
+        var predictedClass = JSON.parse(document.getElementById('data-pred-class').textContent);
+        var classNames    = ['No Defect', 'Class 1', 'Class 2', 'Class 3', 'Class 4'];
+
+        renderBarChart('prob-chart', classNames, probs.map(function(p) { return (p * 100).toFixed(1); }), '', '#00d4ff');
+
+        // Apply confidence bar styles from data attributes
+        document.querySelectorAll('.confidence-bar-fill[data-confidence]').forEach(function(el) {
+            el.style.width = el.dataset.confidence + '%';
+            el.style.background = el.dataset.confColor;
+        });
+    });
+</script>
+{% else %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.confidence-bar-fill[data-confidence]').forEach(function(el) {
+            el.style.width = el.dataset.confidence + '%';
+            el.style.background = el.dataset.confColor;
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Batch: {{ report.batch_name }}{% endblock %}
+
+{% block content %}
+
+<!-- Batch Summary -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="bi bi-file-earmark-bar-graph"></i> {{ report.batch_name }}</h3>
+        <span class="top-bar-badge">
+            <i class="bi bi-clock"></i> {{ report.created_at|timesince }} ago
+        </span>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card blue">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Images</span>
+            <div class="kpi-icon"><i class="bi bi-images"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.total_images }}</div>
+    </div>
+    <div class="kpi-card emerald">
+        <div class="kpi-header">
+            <span class="kpi-label">Passed</span>
+            <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.passed_images }}</div>
+    </div>
+    <div class="kpi-card red">
+        <div class="kpi-header">
+            <span class="kpi-label">Failed</span>
+            <div class="kpi-icon"><i class="bi bi-x-circle"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.failed_images }}</div>
+    </div>
+    <div class="kpi-card amber">
+        <div class="kpi-header">
+            <span class="kpi-label">Avg Severity</span>
+            <div class="kpi-icon"><i class="bi bi-thermometer-half"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.avg_severity }}%</div>
+    </div>
+    <div class="kpi-card cyan">
+        <div class="kpi-header">
+            <span class="kpi-label">Quality Score</span>
+            <div class="kpi-icon"><i class="bi bi-speedometer2"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.quality_score }}%</div>
+    </div>
+    <div class="kpi-card purple">
+        <div class="kpi-header">
+            <span class="kpi-label">Defect Rate</span>
+            <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        </div>
+        <div class="kpi-value">{{ report.defect_rate }}%</div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+    <div class="content-card">
+        <div class="card-header">
+            <h3><i class="bi bi-pie-chart"></i> Defect Distribution</h3>
+        </div>
+        <div class="card-body">
+            <div id="batch-defect-chart" class="chart-container"></div>
+        </div>
+    </div>
+    <div class="content-card">
+        <div class="card-header">
+            <h3><i class="bi bi-bar-chart"></i> Severity Distribution</h3>
+        </div>
+        <div class="card-body">
+            <div id="batch-severity-chart" class="chart-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="bi bi-lightbulb"></i> Batch Insights</h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <ul class="insights-list">
+            {% for insight in insights %}
+            <li>{{ insight }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- Inspection Results Table -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="bi bi-table"></i> Individual Results</h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <div class="table-responsive">
+            <table class="table table-dark mb-0">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Prediction</th>
+                        <th>Confidence</th>
+                        <th>Severity</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inspections %}
+                    <tr>
+                        <td>{{ item.image_name|truncatechars:30 }}</td>
+                        <td>
+                            {% if item.is_defective %}
+                            <span class="result-badge defective"><i class="bi bi-x-circle-fill"></i> {{ item.defect_label }}</span>
+                            {% else %}
+                            <span class="result-badge no-defect"><i class="bi bi-check-circle-fill"></i> Pass</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.confidence|floatformat:3 }}</td>
+                        <td>
+                            <span class="severity-badge severity-{% if item.severity_category == 'High' %}high{% elif item.severity_category == 'Medium' %}medium{% elif item.severity_category == 'Low' %}low{% else %}none{% endif %}">
+                                {{ item.severity_category }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'dashboard:root_cause_analysis' item.id %}" class="btn btn-sm btn-outline-custom">
+                                <i class="bi bi-search"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Back -->
+<div class="mt-3">
+    <a href="{% url 'dashboard:batch_report' %}" class="btn btn-outline-custom">
+        <i class="bi bi-arrow-left"></i> Back to Batch Upload
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ defect_dist_labels|json_script:"data-defect-labels" }}
+{{ defect_dist_values|json_script:"data-defect-values" }}
+{{ severity_dist_labels|json_script:"data-sev-labels" }}
+{{ severity_dist_values|json_script:"data-sev-values" }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var defectLabels = JSON.parse(document.getElementById('data-defect-labels').textContent);
+        var defectValues = JSON.parse(document.getElementById('data-defect-values').textContent);
+        var sevLabels    = JSON.parse(document.getElementById('data-sev-labels').textContent);
+        var sevValues    = JSON.parse(document.getElementById('data-sev-values').textContent);
+
+        renderDonutChart('batch-defect-chart', defectLabels, defectValues, 'Defect Types');
+        renderDonutChart('batch-severity-chart', sevLabels, sevValues, 'Severity Levels');
+    });
+</script>
+{% endblock %}

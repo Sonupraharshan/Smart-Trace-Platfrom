@@ -1,0 +1,128 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Root Cause Analysis{% endblock %}
+
+{% block content %}
+
+<!-- Inspection Summary -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="bi bi-file-earmark-medical"></i> Inspection #{{ inspection.id }} Summary</h3>
+        {% if inspection.is_defective %}
+        <span class="result-badge defective">
+            <i class="bi bi-x-circle-fill"></i> {{ inspection.defect_label }}
+        </span>
+        {% else %}
+        <span class="result-badge no-defect">
+            <i class="bi bi-check-circle-fill"></i> No Defect
+        </span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            <!-- Inspected Image -->
+            <div class="col-md-6">
+                <label class="form-label mb-2">Inspected Image</label>
+                {% if uploaded_image_url %}
+                <img src="{{ uploaded_image_url }}" alt="Inspected image" class="w-100" style="border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                {% else %}
+                <div class="upload-zone" style="padding: 24px;">
+                    <p class="text-muted">Image preview not available</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Grad-CAM + Details -->
+            <div class="col-md-6">
+                {% if gradcam_url %}
+                <label class="form-label mb-2">Grad-CAM Explanation</label>
+                <img src="{{ gradcam_url }}" alt="Grad-CAM showing why the model made this prediction" class="w-100 mb-3" style="border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                {% endif %}
+
+                <div class="detail-row">
+                    <span class="detail-label">Prediction</span>
+                    <span class="detail-value">{{ inspection.defect_label }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Confidence</span>
+                    <span class="detail-value">{{ inspection.confidence|floatformat:4 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Severity</span>
+                    <span class="severity-badge severity-{% if inspection.severity_category == 'High' %}high{% elif inspection.severity_category == 'Medium' %}medium{% elif inspection.severity_category == 'Low' %}low{% else %}none{% endif %}">
+                        {{ inspection.severity_category }} ({{ inspection.severity_score }}%)
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Inspected</span>
+                    <span class="detail-value">{{ inspection.inspected_at|timesince }} ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Similar Historical Defects -->
+<div class="content-card">
+    <div class="card-header">
+        <h3><i class="bi bi-diagram-3"></i> Similar Historical Defects</h3>
+        <span class="top-bar-badge">
+            <i class="bi bi-search"></i> FAISS Retrieval
+        </span>
+    </div>
+    <div class="card-body">
+        {% if similar_images %}
+        <p class="mb-3" style="color: var(--text-secondary); font-size: 0.875rem;">
+            Top {{ similar_images|length }} most similar defect cases from the historical database,
+            ranked by feature similarity score.
+        </p>
+        <div class="similar-grid">
+            {% for sim in similar_images %}
+            <div class="similar-card">
+                {% if sim.image_url %}
+                <img src="{{ sim.image_url }}" alt="Similar defect case #{{ sim.rank }}" loading="lazy">
+                {% else %}
+                <div style="height: 140px; display: flex; align-items: center; justify-content: center; background: var(--bg-primary);">
+                    <i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i>
+                </div>
+                {% endif %}
+                <div class="similar-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="similar-score">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                            {{ sim.similarity_score }}
+                        </span>
+                        <span class="severity-badge severity-none" style="font-size: 0.65rem;">
+                            Rank #{{ sim.rank }}
+                        </span>
+                    </div>
+                    <div class="similar-label mt-1">{{ sim.label_name }}</div>
+                    <div class="similar-label" style="font-size: 0.7rem;">
+                        {{ sim.image_id|truncatechars:25 }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5" style="color: var(--text-muted);">
+            <i class="bi bi-search" style="font-size: 2.5rem; opacity: 0.3;"></i>
+            <p class="mt-3">Similarity search unavailable.</p>
+            <p class="small">Build the FAISS index by running <code>python scripts/build_faiss_index.py</code></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="d-flex gap-2 mt-3">
+    <a href="{% url 'dashboard:inspection_workspace' %}" class="btn btn-outline-custom">
+        <i class="bi bi-arrow-left"></i> Back to Workspace
+    </a>
+    <a href="{% url 'dashboard:executive_dashboard' %}" class="btn btn-outline-custom">
+        <i class="bi bi-grid-1x2"></i> Dashboard
+    </a>
+</div>
+
+{% endblock %}
