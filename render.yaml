@@ -2,9 +2,13 @@ services:
   - type: web
     name: smart-trace-platform
     runtime: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    plan: standard
+    buildCommand: |
+      pip install -r requirements.txt && \
+      python manage.py collectstatic --noinput && \
+      python manage.py migrate && \
+      python scripts/ensure_models.py
+    startCommand: python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60
     envVars:
       - key: DJANGO_DEBUG
         value: "False"
@@ -20,6 +24,8 @@ services:
         fromDatabase:
           name: smart-trace-db
           property: connectionString
+      - key: DEPLOYMENT_MODE
+        value: "production"
 
 databases:
   - name: smart-trace-db
