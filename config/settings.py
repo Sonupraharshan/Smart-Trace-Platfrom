@@ -21,13 +21,19 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1,smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,.vercel.app"
+    ).split(",")
     if host.strip()
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    for origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,https://*.vercel.app"
+    ).split(",")
     if origin.strip()
 ]
 
