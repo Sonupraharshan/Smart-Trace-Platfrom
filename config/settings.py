@@ -23,7 +23,7 @@ ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get(
         "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,.vercel.app"
+        "localhost,127.0.0.1,smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,.vercel.app,.onrender.com"
     ).split(",")
     if host.strip()
 ]
@@ -32,7 +32,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
         "CSRF_TRUSTED_ORIGINS",
-        "https://smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,https://*.vercel.app"
+        "https://smart-trace-platfrom-9619gilzo-sonus-projects-643566c7.vercel.app,https://*.vercel.app,https://*.onrender.com"
     ).split(",")
     if origin.strip()
 ]
