@@ -18,7 +18,6 @@ from ml_pipeline.config import (
     ORIGINAL_IMG_HEIGHT,
     ORIGINAL_IMG_WIDTH,
 )
-from ml_pipeline.data.preprocessing import rle_decode
 
 
 def estimate_severity_from_mask(mask: np.ndarray) -> dict:
@@ -68,6 +67,7 @@ def estimate_severity_from_rle(rle_string: str,
     Returns:
         Severity dict (same as estimate_severity_from_mask)
     """
+    from ml_pipeline.data.preprocessing import rle_decode
     mask = rle_decode(rle_string, height, width)
     return estimate_severity_from_mask(mask)
 
