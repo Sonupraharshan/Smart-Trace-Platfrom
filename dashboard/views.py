@@ -397,10 +397,11 @@ def run_sample_batch(request):
     """
     import shutil
 
-    sample_images = _get_or_create_sample_images()
+    sample_images = _get_or_create_sample_images()[:5]
     if not sample_images:
         messages.error(request, "Unable to locate or generate sample batch images.")
         return redirect("dashboard:batch_report")
+
 
     upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
