@@ -332,3 +332,86 @@ def batch_detail(request, batch_id):
     }
 
     return render(request, "dashboard/batch_detail.html", context)
+
+
+def run_sample_batch(request):
+    """
+    Executes a pre-configured sample batch test using standard sample images.
+    """
+    import shutil
+
+    sample_dir = Path(settings.BASE_DIR) / "data" / "sample_batch"
+    if not sample_dir.exists() or not list(sample_dir.glob("*.jpg")):
+        sample_dir = Path(settings.BASE_DIR) / "data" / "severstal-steel-defect-detection" / "test_images"
+
+    if not sample_dir.exists():
+        messages.error(request, "Sample batch image dataset directory not found.")
+        return redirect("dashboard:batch_report")
+
+    sample_images = sorted(list(sample_dir.glob("*.jpg")))[:10]
+    if not sample_images:
+        messages.error(request, "No sample images available to run sample batch.")
+        return redirect("dashboard:batch_report")
+
+    upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy sample images to uploads directory so media URLs work as expected
+    saved_paths = []
+    for img_path in sample_images:
+        dest_filename = f"sample_{uuid.uuid4().hex[:8]}_{img_path.name}"
+        dest_path = upload_dir / dest_filename
+        shutil.copy2(img_path, dest_path)
+        saved_paths.append(dest_path)
+
+    try:
+        from ml_pipeline.inference.engine import get_inference_engine
+        from dashboard.batch_processor import process_batch
+
+        batch_name = f"Sample_Batch_{uuid.uuid4().hex[:6].upper()}"
+        engine = get_inference_engine()
+        batch_result = process_batch(saved_paths, batch_name, engine)
+
+        # Save batch report to DB
+        report = BatchReport.objects.create(
+            batch_name=batch_name,
+            total_images=batch_result["total_images"],
+            passed_images=batch_result["passed_images"],
+            failed_images=batch_result["failed_images"],
+            avg_severity=batch_result["avg_severity"],
+            quality_score=batch_result["quality_score"],
+            defect_rate=batch_result["defect_rate"],
+            defect_distribution_json=json.dumps(
+                batch_result["defect_distribution"]
+            ),
+            report_path=batch_result.get("report_path", ""),
+        )
+
+        # Save individual inspection results linked to batch
+        for r in batch_result["results"]:
+            if r.get("predicted_class", -1) >= 0:
+                InspectionResult.objects.create(
+                    image_name=Path(r["image_path"]).name,
+                    image_path=r["image_path"],
+                    predicted_class=r["predicted_class"],
+                    defect_label=r["defect_label"],
+                    confidence=r["confidence"],
+                    severity_score=r["severity_score"],
+                    severity_category=r["severity_category"],
+                    defect_area_pct=r.get("defect_area_pct", 0),
+                    gradcam_path=r.get("gradcam_path", ""),
+                    is_defective=r["is_defective"],
+                    batch_report=report,
+                )
+
+        messages.success(
+            request,
+            f"Sample Batch '{batch_name}' processed successfully! "
+            f"Inspected {batch_result['total_images']} images."
+        )
+        return redirect("dashboard:batch_detail", batch_id=report.id)
+
+    except Exception as e:
+        messages.error(request, f"Sample batch execution failed: {str(e)}")
+        return redirect("dashboard:batch_report")
+

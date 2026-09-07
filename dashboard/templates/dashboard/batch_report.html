@@ -38,8 +38,29 @@
             </div>
         </div>
 
+        <!-- Sample Batch Card -->
+        <div class="content-card mt-3" style="border: 1px solid rgba(59, 130, 246, 0.3); background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3><i class="bi bi-rocket-takeoff" style="color: #60a5fa;"></i> Test Sample Batch</h3>
+                <span class="badge bg-primary" style="font-size: 0.7rem;">Demo</span>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Don't have dataset images ready? Run our pre-loaded sample batch (10 steel surface images) to test batch tracing, defect classification, and quality reporting instantly.
+                </p>
+                <form method="POST" action="{% url 'dashboard:run_sample_batch' %}" data-loading="Running sample batch inspection... Please wait.">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-custom w-100 d-flex justify-content-center align-items-center gap-2">
+                        <i class="bi bi-play-circle-fill text-primary"></i>
+                        <span>Run Sample Batch</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- Previous Reports -->
         <div class="content-card mt-3">
+
             <div class="card-header">
                 <h3><i class="bi bi-clock-history"></i> Previous Reports</h3>
             </div>

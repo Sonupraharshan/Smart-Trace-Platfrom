@@ -18,4 +18,6 @@ urlpatterns = [
     # Batch Report
     path("batch/", views.batch_report, name="batch_report"),
     path("batch/<int:batch_id>/", views.batch_detail, name="batch_detail"),
+    path("batch/sample/", views.run_sample_batch, name="run_sample_batch"),
 ]
+
