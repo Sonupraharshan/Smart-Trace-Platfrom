@@ -5,81 +5,82 @@
 
 {% block content %}
 
-<!-- Platform Overview & Quick Start Banner -->
-<div class="content-card mb-4" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px;">
+<!-- Executive Overview Banner -->
+<div class="content-card mb-4">
   <div class="card-body py-4 px-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-4">
-      <div style="flex: 1; min-width: 300px;">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
+      <div style="flex: 1; min-width: 320px;">
         <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge bg-primary-subtle text-primary px-2 py-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">WELCOME TO SMART-TRACE</span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+            <i class="bi bi-shield-check me-1"></i> METALLURGY QUALITY ASSURANCE
+          </span>
+          <span class="text-muted small">• Line 4 Automated Inspection</span>
         </div>
-        <h2 class="h4 font-weight-bold mb-2" style="color: var(--text-primary);">
-          Industrial Steel Defect Detection & Root Cause Intelligence
+        <h2 class="h4 font-weight-bold mb-2" style="color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif;">
+          Steel Surface Defect Detection & Root Cause Intelligence
         </h2>
         <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;" class="mb-3">
-          SmartTrace uses deep learning vision models (ResNet50 + ONNX + FAISS vector search) to analyze steel manufacturing surface images, classify defect types, measure affected area %, compute severity scores, and match historical defects for instant root cause analysis.
+          Automated vision intelligence system for hot and cold rolled steel coils. Detects surface pitting, inclusions, scratches, and patches with real-time Grad-CAM heatmaps and vector similarity matching.
         </p>
 
-        <!-- 3-Step Quick Guide -->
-        <div class="row g-3 mt-1">
+        <!-- 3 Quick Pipeline Steps -->
+        <div class="row g-3">
           <div class="col-md-4">
-            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);">
-              <div class="d-flex align-items-center gap-2 mb-1" style="color: #60a5fa; font-weight: 600; font-size: 0.85rem;">
-                <i class="bi bi-grid-1x2-fill"></i> 1. Executive Dashboard
+            <div class="p-3 rounded border" style="background: var(--bg-surface-subtle); border-color: var(--border-color) !important;">
+              <div class="d-flex align-items-center gap-2 mb-1" style="color: var(--accent-blue); font-weight: 600; font-size: 0.84rem;">
+                <i class="bi bi-grid-1x2"></i> 1. Factory KPIs
               </div>
               <div style="font-size: 0.78rem; color: var(--text-muted);">
-                View aggregate factory quality metrics, pass rates, risk gauges, defect distribution, and recent activity log.
+                Aggregate plant metrics, pass rates, risk gauges, and defect distribution.
               </div>
             </div>
           </div>
           <div class="col-md-4">
-            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);">
-              <div class="d-flex align-items-center gap-2 mb-1" style="color: #34d399; font-weight: 600; font-size: 0.85rem;">
+            <div class="p-3 rounded border" style="background: var(--bg-surface-subtle); border-color: var(--border-color) !important;">
+              <div class="d-flex align-items-center gap-2 mb-1" style="color: var(--accent-emerald); font-weight: 600; font-size: 0.84rem;">
                 <i class="bi bi-search"></i> 2. Single Inspection
               </div>
               <div style="font-size: 0.78rem; color: var(--text-muted);">
-                Upload a steel surface image for real-time defect classification, Grad-CAM visual heatmaps, and FAISS root cause search.
+                Stage steel plate images with live preview, compute severity & Grad-CAM.
               </div>
             </div>
           </div>
           <div class="col-md-4">
-            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);">
-              <div class="d-flex align-items-center gap-2 mb-1" style="color: #a78bfa; font-weight: 600; font-size: 0.85rem;">
-                <i class="bi bi-collection"></i> 3. Batch Inspection
+            <div class="p-3 rounded border" style="background: var(--bg-surface-subtle); border-color: var(--border-color) !important;">
+              <div class="d-flex align-items-center gap-2 mb-1" style="color: var(--accent-purple); font-weight: 600; font-size: 0.84rem;">
+                <i class="bi bi-collection"></i> 3. Batch Lot QA
               </div>
               <div style="font-size: 0.78rem; color: var(--text-muted);">
-                Process full production batches in 1 click or download sample test images to test custom lot quality analytics & CSV exports.
+                Stage multiple plates, review thumbnails before submission, and export lot audits.
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="d-flex flex-column gap-2 mt-2" style="min-width: 200px;">
-        <form method="POST" action="{% url 'dashboard:run_sample_batch' %}" data-loading="Running sample batch inspection... Please wait.">
+      <!-- Quick Action Controls -->
+      <div class="d-flex flex-column gap-2" style="min-width: 220px;">
+        <form method="POST" action="{% url 'dashboard:run_sample_batch' %}" data-loading="Running sample lot QA... Please wait.">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary-custom w-100 d-flex align-items-center justify-content-center gap-2 py-2">
             <i class="bi bi-play-circle-fill"></i>
-            <span>Run Sample Batch</span>
+            <span>Test Sample Lot</span>
           </button>
         </form>
         <a href="{% url 'dashboard:inspection_workspace' %}" class="btn btn-outline-custom w-100 d-flex align-items-center justify-content-center gap-2 py-2">
           <i class="bi bi-search"></i>
-          <span>Single Inspect</span>
+          <span>Single Plate QA</span>
         </a>
         <a href="{% url 'dashboard:batch_report' %}" class="btn btn-outline-custom w-100 d-flex align-items-center justify-content-center gap-2 py-2">
           <i class="bi bi-collection"></i>
-          <span>Batch Workspace</span>
+          <span>Batch Lot Workspace</span>
         </a>
       </div>
     </div>
   </div>
 </div>
 
-
-<!-- KPI Cards -->
-
+<!-- Primary KPI Metrics Grid -->
 <div class="kpi-grid">
   <div class="kpi-card blue">
     <div class="kpi-header">
@@ -87,7 +88,7 @@
       <div class="kpi-icon"><i class="bi bi-eye"></i></div>
     </div>
     <div class="kpi-value">{{ kpis.total_inspected }}</div>
-    <div class="kpi-subtitle">Images processed</div>
+    <div class="kpi-subtitle">Total plates scanned</div>
   </div>
 
   <div class="kpi-card emerald">
@@ -96,7 +97,7 @@
       <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
     </div>
     <div class="kpi-value">{{ kpis.pass_rate }}%</div>
-    <div class="kpi-subtitle">{{ kpis.non_defective_count }} passed</div>
+    <div class="kpi-subtitle">{{ kpis.non_defective_count }} clean plates</div>
   </div>
 
   <div class="kpi-card red">
@@ -105,7 +106,7 @@
       <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
     </div>
     <div class="kpi-value">{{ kpis.defect_rate }}%</div>
-    <div class="kpi-subtitle">{{ kpis.defective_count }} defective</div>
+    <div class="kpi-subtitle">{{ kpis.defective_count }} flagged defects</div>
   </div>
 
   <div class="kpi-card amber">
@@ -114,15 +115,15 @@
       <div class="kpi-icon"><i class="bi bi-thermometer-half"></i></div>
     </div>
     <div class="kpi-value">{{ kpis.avg_severity }}%</div>
-    <div class="kpi-subtitle">Area affected</div>
+    <div class="kpi-subtitle">Affected surface area</div>
   </div>
 
   <div class="kpi-card purple">
     <div class="kpi-header">
-      <span class="kpi-label">Most Common Defect</span>
+      <span class="kpi-label">Primary Defect</span>
       <div class="kpi-icon"><i class="bi bi-bullseye"></i></div>
     </div>
-    <div class="kpi-value" style="font-size: 1.1rem">
+    <div class="kpi-value" style="font-size: 1.15rem">
       {{ kpis.most_common_defect }}
     </div>
     <div class="kpi-subtitle">
@@ -136,7 +137,7 @@
       <div class="kpi-icon"><i class="bi bi-graph-up"></i></div>
     </div>
     <div class="kpi-value">{{ kpis.avg_confidence|floatformat:2 }}</div>
-    <div class="kpi-subtitle">Model certainty</div>
+    <div class="kpi-subtitle">Model certainty index</div>
   </div>
 </div>
 
@@ -144,36 +145,28 @@
 <div class="charts-grid">
   <div class="content-card">
     <div class="card-header">
-      <h3><i class="bi bi-speedometer2"></i> Quality Score</h3>
+      <h3><i class="bi bi-speedometer2 text-primary"></i> Factory Quality Index</h3>
     </div>
     <div class="card-body">
-      <div
-        id="quality-gauge"
-        class="chart-container"
-        style="min-height: 220px"
-      ></div>
+      <div id="quality-gauge" class="chart-container" style="min-height: 200px"></div>
     </div>
   </div>
 
   <div class="content-card">
     <div class="card-header">
-      <h3><i class="bi bi-shield-exclamation"></i> Risk Score</h3>
+      <h3><i class="bi bi-shield-exclamation text-primary"></i> Operational Defect Risk</h3>
     </div>
     <div class="card-body">
-      <div
-        id="risk-gauge"
-        class="chart-container"
-        style="min-height: 220px"
-      ></div>
+      <div id="risk-gauge" class="chart-container" style="min-height: 200px"></div>
     </div>
   </div>
 </div>
 
-<!-- Distribution Charts -->
+<!-- Defect Breakdown Charts -->
 <div class="charts-grid">
   <div class="content-card">
     <div class="card-header">
-      <h3><i class="bi bi-pie-chart"></i> Defect Distribution</h3>
+      <h3><i class="bi bi-pie-chart text-primary"></i> Defect Type Distribution</h3>
     </div>
     <div class="card-body">
       <div id="defect-chart" class="chart-container"></div>
@@ -182,7 +175,7 @@
 
   <div class="content-card">
     <div class="card-header">
-      <h3><i class="bi bi-bar-chart"></i> Severity Distribution</h3>
+      <h3><i class="bi bi-bar-chart text-primary"></i> Severity Distribution</h3>
     </div>
     <div class="card-body">
       <div id="severity-chart" class="chart-container"></div>
@@ -190,17 +183,23 @@
   </div>
 </div>
 
-<!-- Insights Panel -->
+<!-- Operational Insights Panel -->
 <div class="content-card">
   <div class="card-header">
-    <h3><i class="bi bi-lightbulb"></i>Insights</h3>
+    <h3><i class="bi bi-lightbulb text-primary"></i> Quality Intelligence Insights</h3>
   </div>
   <div class="card-body" style="padding: 0">
     <ul class="insights-list">
       {% for insight in insights %}
-      <li>{{ insight }}</li>
+      <li>
+        <i class="bi bi-check-circle-fill text-primary"></i>
+        <span>{{ insight }}</span>
+      </li>
       {% empty %}
-      <li>No inspection data available. Upload images to begin analysis.</li>
+      <li>
+        <i class="bi bi-info-circle text-muted"></i>
+        <span>No inspection data recorded yet. Upload surface images to generate insights.</span>
+      </li>
       {% endfor %}
     </ul>
   </div>
@@ -209,72 +208,66 @@
 <!-- Recent Inspections Table -->
 <div class="content-card">
   <div class="card-header">
-    <h3><i class="bi bi-clock-history"></i> Recent Inspections</h3>
-    <a
-      href="{% url 'dashboard:inspection_workspace' %}"
-      class="btn btn-sm btn-outline-custom"
-    >
-      <i class="bi bi-plus"></i> New Inspection
+    <h3><i class="bi bi-clock-history text-primary"></i> Recent Surface Plate Inspections</h3>
+    <a href="{% url 'dashboard:inspection_workspace' %}" class="btn btn-sm btn-outline-custom">
+      <i class="bi bi-plus-lg"></i> New Inspection
     </a>
   </div>
   <div class="card-body" style="padding: 0">
     <div class="table-responsive">
-      <table class="table table-dark mb-0">
+      <table class="table-custom">
         <thead>
           <tr>
-            <th>Image</th>
-            <th>Prediction</th>
+            <th>Plate ID / File</th>
+            <th>Classification</th>
             <th>Confidence</th>
             <th>Severity</th>
-            <th>Time</th>
-            <th>Action</th>
+            <th>Timestamp</th>
+            <th>Investigation</th>
           </tr>
         </thead>
         <tbody>
           {% for item in recent_inspections %}
           <tr>
-            <td>{{ item.image_name|truncatechars:30 }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-image text-muted"></i>
+                <span style="font-weight: 500; color: var(--text-primary);">{{ item.image_name|truncatechars:30 }}</span>
+              </div>
+            </td>
             <td>
               {% if item.is_defective %}
-              <span class="result-badge defective"
-                ><i class="bi bi-x-circle-fill"></i> {{ item.defect_label
-                }}</span
-              >
+              <span class="result-badge defective">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ item.defect_label }}
+              </span>
               {% else %}
-              <span class="result-badge no-defect"
-                ><i class="bi bi-check-circle-fill"></i> No Defect</span
-              >
+              <span class="result-badge no-defect">
+                <i class="bi bi-check-circle-fill"></i> Normal (Pass)
+              </span>
               {% endif %}
             </td>
-            <td>{{ item.confidence|floatformat:2 }}</td>
             <td>
-              <span
-                class="severity-badge severity-{% if item.severity_category == 'High' %}high{% elif item.severity_category == 'Medium' %}medium{% elif item.severity_category == 'Low' %}low{% else %}none{% endif %}"
-              >
+              <span style="font-weight: 600;">{{ item.confidence|floatformat:2 }}</span>
+            </td>
+            <td>
+              <span class="severity-badge severity-{% if item.severity_category == 'High' %}high{% elif item.severity_category == 'Medium' %}medium{% elif item.severity_category == 'Low' %}low{% else %}none{% endif %}">
                 {{ item.severity_category }}
               </span>
             </td>
-            <td>{{ item.inspected_at|timesince }} ago</td>
             <td>
-              <a
-                href="{% url 'dashboard:root_cause_analysis' item.id %}"
-                class="btn btn-sm btn-outline-custom"
-              >
-                <i class="bi bi-search"></i> Analyze
+              <span class="text-muted small">{{ item.inspected_at|timesince }} ago</span>
+            </td>
+            <td>
+              <a href="{% url 'dashboard:root_cause_analysis' item.id %}" class="btn btn-sm btn-outline-custom">
+                <i class="bi bi-search"></i> Root Cause
               </a>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td
-              colspan="6"
-              class="text-center py-4"
-              style="color: var(--text-muted)"
-            >
-              No inspections yet.
-              <a href="{% url 'dashboard:inspection_workspace' %}"
-                >Upload your first image</a
-              >.
+            <td colspan="6" class="text-center py-4" style="color: var(--text-muted)">
+              No inspection records found.
+              <a href="{% url 'dashboard:inspection_workspace' %}" class="text-primary font-weight-bold">Upload an image</a> to begin inspection.
             </td>
           </tr>
           {% endfor %}
@@ -283,44 +276,22 @@
     </div>
   </div>
   {% if recent_inspections %}
-  <div class="card-footer d-flex justify-content-between align-items-center py-3 px-4" style="background: rgba(15, 23, 42, 0.5); border-top: 1px solid rgba(255, 255, 255, 0.05);">
+  <div class="card-footer d-flex justify-content-between align-items-center py-3 px-4">
     <span class="text-muted small">
-      <i class="bi bi-info-circle me-1 text-primary"></i> Showing latest inspection readings log
+      <i class="bi bi-info-circle me-1 text-primary"></i> Showing latest quality inspection logs
     </span>
     <form method="POST" action="{% url 'dashboard:clear_history' %}" onsubmit="return confirm('Are you sure you want to clear all previous readings? This will permanently delete all inspection logs and batch reports.');" class="m-0">
       {% csrf_token %}
       <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
-        <i class="bi bi-trash3-fill"></i>
-        <span>Clear All Previous Readings</span>
+        <i class="bi bi-trash3"></i>
+        <span>Clear History Log</span>
       </button>
     </form>
   </div>
   {% endif %}
 </div>
 
-<!-- System Maintenance & History Reset Footer Card -->
-<div class="content-card mt-4" style="background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(239, 68, 68, 0.3);">
-  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
-    <div>
-      <div style="font-weight: 600; color: var(--text-primary); font-size: 0.92rem;">
-        <i class="bi bi-trash3 text-danger me-2"></i> System Maintenance & Data Reset
-      </div>
-      <div style="font-size: 0.78rem; color: var(--text-muted);">
-        Purge all previous inspection readings, batch reports, and temporary media files to restore a fresh slate.
-      </div>
-    </div>
-    <form method="POST" action="{% url 'dashboard:clear_history' %}" onsubmit="return confirm('Are you sure you want to delete all previous inspection readings and batch reports? This cannot be undone.');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
-        <i class="bi bi-trash3-fill"></i>
-        <span>Clear All Previous Readings</span>
-      </button>
-    </form>
-  </div>
-</div>
-
 {% endblock %}
-
 
 {% block extra_js %}
 {{ kpis.quality_score|json_script:"data-quality-score" }}
@@ -331,39 +302,17 @@
 {{ severity_dist_values|json_script:"data-sev-values" }}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    var qualityScore = JSON.parse(
-      document.getElementById("data-quality-score").textContent,
-    );
-    var riskScore = JSON.parse(
-      document.getElementById("data-risk-score").textContent,
-    );
-    var defectLabels = JSON.parse(
-      document.getElementById("data-defect-labels").textContent,
-    );
-    var defectValues = JSON.parse(
-      document.getElementById("data-defect-values").textContent,
-    );
-    var sevLabels = JSON.parse(
-      document.getElementById("data-sev-labels").textContent,
-    );
-    var sevValues = JSON.parse(
-      document.getElementById("data-sev-values").textContent,
-    );
+    var qualityScore = JSON.parse(document.getElementById("data-quality-score").textContent);
+    var riskScore    = JSON.parse(document.getElementById("data-risk-score").textContent);
+    var defectLabels = JSON.parse(document.getElementById("data-defect-labels").textContent);
+    var defectValues = JSON.parse(document.getElementById("data-defect-values").textContent);
+    var sevLabels    = JSON.parse(document.getElementById("data-sev-labels").textContent);
+    var sevValues    = JSON.parse(document.getElementById("data-sev-values").textContent);
 
-    renderGauge("quality-gauge", qualityScore, "Quality Score");
-    renderGauge("risk-gauge", riskScore, "Risk Score");
-    renderDonutChart(
-      "defect-chart",
-      defectLabels,
-      defectValues,
-      "Defect Type Distribution",
-    );
-    renderDonutChart(
-      "severity-chart",
-      sevLabels,
-      sevValues,
-      "Severity Distribution",
-    );
+    renderGauge("quality-gauge", qualityScore, "Quality Index");
+    renderGauge("risk-gauge", riskScore, "Defect Risk");
+    renderDonutChart("defect-chart", defectLabels, defectValues, "Defect Distribution");
+    renderDonutChart("severity-chart", sevLabels, sevValues, "Severity Breakdown");
   });
 </script>
 {% endblock %}

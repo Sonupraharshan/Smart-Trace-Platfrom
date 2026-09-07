@@ -1,19 +1,19 @@
 {% load static %}
 {% load dashboard_extras %}
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Smart Quality Inspection & Root Cause Intelligence Platform — Industrial Vision AI for steel defect detection, severity analysis, and quality analytics.">
-    <title>{% block title %}{{ page_title|default:"Dashboard" }}{% endblock %} | Smart Trace</title>
+    <meta name="description" content="SmartTrace — High-Precision Industrial Quality Inspection & Defect Intelligence Platform for automated manufacturing QA.">
+    <title>{% block title %}{{ page_title|default:"Dashboard" }}{% endblock %} | SmartTrace Industrial QA</title>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter + Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap 5.3 Dark -->
+    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
@@ -31,39 +31,42 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="brand-icon">
-                <i class="bi bi-shield-check"></i>
+                <i class="bi bi-layers-half"></i>
             </div>
             <div class="brand-text">
                 <span class="brand-name">SmartTrace</span>
-                <span class="brand-subtitle">Quality Intelligence</span>
+                <span class="brand-subtitle">Manufacturing QA</span>
             </div>
         </div>
 
         <div class="sidebar-nav">
+            <div class="nav-section-label">Quality Monitoring</div>
             <a href="{% url 'dashboard:executive_dashboard' %}"
                class="nav-item {% if page_title == 'Executive Dashboard' %}active{% endif %}"
                id="nav-dashboard">
-                <i class="bi bi-grid-1x2-fill"></i>
+                <i class="bi bi-grid-1x2"></i>
                 <span>Dashboard</span>
             </a>
+
+            <div class="nav-section-label mt-2">Surface Inspection</div>
             <a href="{% url 'dashboard:inspection_workspace' %}"
                class="nav-item {% if page_title == 'Inspection Workspace' %}active{% endif %}"
                id="nav-inspect">
                 <i class="bi bi-search"></i>
-                <span>Inspect</span>
+                <span>Single Inspection</span>
             </a>
             <a href="{% url 'dashboard:batch_report' %}"
                class="nav-item {% if page_title == 'Batch Inspection' %}active{% endif %}"
                id="nav-batch">
                 <i class="bi bi-collection"></i>
-                <span>Batch</span>
+                <span>Batch Workspace</span>
             </a>
         </div>
 
         <div class="sidebar-footer">
             <div class="system-status">
                 <div class="status-dot online"></div>
-                <span>System Online</span>
+                <span>Station #04 • Active</span>
             </div>
         </div>
     </nav>
@@ -73,20 +76,29 @@
         <!-- Top Bar -->
         <header class="top-bar">
             <div class="top-bar-left">
-                <button class="sidebar-toggle" id="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-collapsed')">
+                <button class="sidebar-toggle" id="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
                     <i class="bi bi-list"></i>
                 </button>
-                <h1 class="page-title">{{ page_title|default:"Dashboard" }}</h1>
+                <div class="breadcrumb-wrap">
+                    <span class="breadcrumb-root"><i class="bi bi-building-gear me-1"></i>Rolling Mill QA</span>
+                    <span class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></span>
+                    <h1 class="page-title">{{ page_title|default:"Dashboard" }}</h1>
+                </div>
             </div>
             <div class="top-bar-right">
                 <div class="top-bar-badge">
-                    <i class="bi bi-cpu"></i>
-                    <span>Vision AI</span>
+                    <i class="bi bi-cpu text-primary"></i>
+                    <span>ResNet-50 v2.1</span>
                 </div>
                 <div class="top-bar-badge accent">
-                    <i class="bi bi-lightning-charge-fill"></i>
-                    <span>Real-time</span>
+                    <i class="bi bi-check2-circle text-success"></i>
+                    <span>FAISS Vector Engine</span>
                 </div>
+                <!-- Theme Switcher -->
+                <button type="button" class="btn-theme-toggle" id="theme-toggle-btn" title="Toggle Theme">
+                    <i class="bi bi-moon-stars-fill text-secondary"></i>
+                    <span class="theme-text d-none d-sm-inline">Dark Mode</span>
+                </button>
             </div>
         </header>
 
@@ -96,8 +108,8 @@
             {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                 <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% elif message.tags == 'warning' %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div>{{ message }}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
             </div>
             {% endfor %}
         </div>
@@ -114,6 +126,7 @@
 
     <!-- Custom JS -->
     <script src="{% static 'dashboard/js/charts.js' %}"></script>
+    <script src="{% static 'dashboard/js/preview.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

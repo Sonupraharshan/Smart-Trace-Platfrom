@@ -147,9 +147,11 @@ def inspection_workspace(request):
                 messages.error(request, f"Inspection failed: {str(e)}")
                 result = {"error": str(e)}
 
+    sample_list = _sync_samples_to_media()
     context = {
         "form": form,
         "result": result,
+        "sample_list": sample_list,
         "page_title": "Inspection Workspace",
     }
 
@@ -229,17 +231,23 @@ def batch_report(request):
     if request.method == "POST":
         form = BatchUploadForm(request.POST, request.FILES)
         files = request.FILES.getlist("images")
+        is_sample_batch = request.POST.get("is_sample_batch") == "1"
 
-        if files:
-            batch_name = request.POST.get("batch_name", "").strip()
-            if not batch_name:
-                batch_name = f"Batch_{uuid.uuid4().hex[:6]}"
+        saved_paths = []
+        upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
 
-            # Save uploaded files
-            upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
-            upload_dir.mkdir(parents=True, exist_ok=True)
+        if is_sample_batch and not files:
+            import shutil
+            sample_images = _get_or_create_sample_images()[:4]
+            for img_path in sample_images:
+                dest_filename = f"sample_{uuid.uuid4().hex[:8]}_{img_path.name}"
+                dest_path = upload_dir / dest_filename
+                shutil.copy2(img_path, dest_path)
+                saved_paths.append(dest_path)
+            files = saved_paths
 
-            saved_paths = []
+        elif files:
             for f in files:
                 filename = f"{uuid.uuid4().hex[:8]}_{f.name}"
                 path = upload_dir / filename
@@ -247,6 +255,11 @@ def batch_report(request):
                     for chunk in f.chunks():
                         dest.write(chunk)
                 saved_paths.append(path)
+
+        if saved_paths:
+            batch_name = request.POST.get("batch_name", "").strip()
+            if not batch_name:
+                batch_name = "Sample_Lot_QA" if is_sample_batch else f"Batch_{uuid.uuid4().hex[:6]}"
 
             try:
                 from ml_pipeline.inference.engine import get_inference_engine
@@ -317,11 +330,13 @@ def batch_report(request):
 
     # Get previous batch reports
     previous_batches = BatchReport.objects.all()[:10]
+    sample_list = _sync_samples_to_media()
 
     context = {
         "form": form,
         "batch_result": batch_result,
         "previous_batches": previous_batches,
+        "sample_list": sample_list,
         "page_title": "Batch Inspection",
     }
 
@@ -354,6 +369,38 @@ def batch_detail(request, batch_id):
     }
 
     return render(request, "dashboard/batch_detail.html", context)
+
+
+def _sync_samples_to_media():
+    """Ensure sample images are available in media/samples for instant client previews."""
+    import shutil
+    dest_dir = Path(settings.MEDIA_ROOT) / "samples"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    raw_samples = _get_or_create_sample_images()
+    synced = []
+    labels = [
+        "Defective (Pitted Surface)",
+        "Clean Surface (Pass)",
+        "Defective (Surface Scratch)",
+        "Defective (Inclusion)",
+        "Clean Surface (Pass)",
+        "Defective (Patches)",
+    ]
+    for i, s_path in enumerate(raw_samples[:6]):
+        dest_file = dest_dir / f"sample_{i+1}.jpg"
+        if not dest_file.exists() and Path(s_path).exists():
+            shutil.copy2(str(s_path), str(dest_file))
+        size_kb = max(1, dest_file.stat().st_size // 1024) if dest_file.exists() else 50
+        synced.append({
+            "id": f"sample_{i+1}",
+            "filename": f"Sample_Steel_Plate_0{i+1}.jpg",
+            "url": f"{settings.MEDIA_URL}samples/sample_{i+1}.jpg",
+            "size": f"{size_kb} KB",
+            "dimensions": "1600 × 256 px",
+            "label": labels[i] if i < len(labels) else f"Sample Plate #{i+1}",
+            "is_defective": "Defective" in labels[i] if i < len(labels) else True,
+        })
+    return synced
 
 
 def _get_or_create_sample_images():

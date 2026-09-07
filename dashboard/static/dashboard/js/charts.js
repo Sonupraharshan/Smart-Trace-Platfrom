@@ -1,35 +1,44 @@
 /**
- * Smart Trace — Plotly Chart Helpers
- * Industrial-themed chart configurations
+ * SmartTrace — Plotly Chart Helpers
+ * Clean enterprise-grade chart configurations with dual theme support.
  */
 
-// Dark theme layout base
-const DARK_LAYOUT = {
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {
-        family: 'Inter, sans-serif',
-        color: '#8b95a8',
-        size: 12,
-    },
-    margin: { t: 40, r: 20, b: 40, l: 40 },
-    showlegend: true,
-    legend: {
-        font: { size: 11, color: '#8b95a8' },
-        bgcolor: 'rgba(0,0,0,0)',
-    },
+// Colors for enterprise manufacturing analytics
+const COLORS = {
+    blue: '#2563eb',
+    blueSubtle: 'rgba(37, 99, 235, 0.15)',
+    purple: '#7c3aed',
+    emerald: '#059669',
+    amber: '#d97706',
+    red: '#dc2626',
+    cyan: '#0284c7',
+    palette: ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0284c7'],
 };
 
-// Color palette
-const COLORS = {
-    blue: '#00d4ff',
-    purple: '#7c3aed',
-    emerald: '#00e676',
-    amber: '#ffb800',
-    red: '#ff1744',
-    cyan: '#06b6d4',
-    palette: ['#00d4ff', '#7c3aed', '#00e676', '#ffb800', '#ff1744', '#06b6d4'],
-};
+/**
+ * Returns dynamic theme layout configuration for Plotly
+ */
+function getChartTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: {
+            family: 'Inter, sans-serif',
+            color: isDark ? '#94a3b8' : '#475569',
+            size: 11,
+        },
+        margin: { t: 36, r: 16, b: 36, l: 36 },
+        showlegend: true,
+        legend: {
+            font: { size: 11, color: isDark ? '#cbd5e1' : '#334155' },
+            bgcolor: 'rgba(0,0,0,0)',
+        },
+        gridColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+        textColor: isDark ? '#f8fafc' : '#0f172a',
+        sliceBorderColor: isDark ? '#131b2e' : '#ffffff',
+    };
+}
 
 const PLOTLY_CONFIG = {
     displayModeBar: false,
@@ -43,28 +52,35 @@ function renderDonutChart(elementId, labels, values, title) {
     const el = document.getElementById(elementId);
     if (!el || !labels || labels.length === 0) return;
 
+    const theme = getChartTheme();
+
     const data = [{
         type: 'pie',
         labels: labels,
         values: values,
-        hole: 0.55,
+        hole: 0.58,
         marker: {
             colors: COLORS.palette.slice(0, labels.length),
-            line: { color: '#0a0e17', width: 2 },
+            line: { color: theme.sliceBorderColor, width: 2 },
         },
         textinfo: 'label+percent',
-        textfont: { size: 11, color: '#e8edf5' },
+        textfont: { size: 11, color: '#ffffff' },
         hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>%{percent}<extra></extra>',
     }];
 
     const layout = {
-        ...DARK_LAYOUT,
+        paper_bgcolor: theme.paper_bgcolor,
+        plot_bgcolor: theme.plot_bgcolor,
+        font: theme.font,
+        margin: theme.margin,
+        showlegend: false,
         title: {
             text: title,
-            font: { size: 14, color: '#e8edf5' },
-            x: 0.5,
+            font: { size: 13, color: theme.textColor, family: 'Inter' },
+            x: 0.05,
+            y: 0.96,
         },
-        height: 320,
+        height: 270,
     };
 
     Plotly.newPlot(el, data, layout, PLOTLY_CONFIG);
@@ -77,33 +93,43 @@ function renderBarChart(elementId, labels, values, title, color) {
     const el = document.getElementById(elementId);
     if (!el || !labels || labels.length === 0) return;
 
+    const theme = getChartTheme();
+    const barColor = color || COLORS.blue;
+
     const data = [{
         type: 'bar',
         x: values,
         y: labels,
         orientation: 'h',
         marker: {
-            color: color || COLORS.blue,
-            opacity: 0.85,
-            line: { color: color || COLORS.blue, width: 1 },
+            color: barColor,
+            opacity: 0.9,
+            line: { color: barColor, width: 1 },
+            cornerradius: 4,
         },
         hovertemplate: '<b>%{y}</b>: %{x}<extra></extra>',
     }];
 
     const layout = {
-        ...DARK_LAYOUT,
+        paper_bgcolor: theme.paper_bgcolor,
+        plot_bgcolor: theme.plot_bgcolor,
+        font: theme.font,
+        margin: { t: 36, r: 20, b: 36, l: 80 },
         title: {
             text: title,
-            font: { size: 14, color: '#e8edf5' },
-            x: 0.5,
+            font: { size: 13, color: theme.textColor, family: 'Inter' },
+            x: 0.05,
+            y: 0.96,
         },
-        height: 320,
+        height: 270,
         xaxis: {
-            gridcolor: 'rgba(255,255,255,0.04)',
-            zerolinecolor: 'rgba(255,255,255,0.06)',
+            gridcolor: theme.gridColor,
+            zerolinecolor: theme.gridColor,
+            tickfont: { color: theme.font.color },
         },
         yaxis: {
             automargin: true,
+            tickfont: { color: theme.font.color },
         },
     };
 
@@ -111,12 +137,13 @@ function renderBarChart(elementId, labels, values, title, color) {
 }
 
 /**
- * Render a quality/risk gauge chart.
+ * Render a quality or risk gauge chart.
  */
 function renderGauge(elementId, value, title, maxVal) {
     const el = document.getElementById(elementId);
     if (!el) return;
 
+    const theme = getChartTheme();
     maxVal = maxVal || 100;
 
     let gaugeColor;
@@ -132,41 +159,43 @@ function renderGauge(elementId, value, title, maxVal) {
         value: value,
         title: {
             text: title,
-            font: { size: 14, color: '#e8edf5' },
+            font: { size: 13, color: theme.textColor, family: 'Inter' },
         },
         number: {
             suffix: '%',
-            font: { size: 32, color: '#e8edf5', family: 'Inter' },
+            font: { size: 28, color: theme.textColor, family: 'Inter' },
         },
         gauge: {
             axis: {
                 range: [0, maxVal],
                 tickwidth: 1,
-                tickcolor: '#5a6478',
+                tickcolor: theme.font.color,
                 dtick: 25,
             },
-            bar: { color: gaugeColor, thickness: 0.7 },
-            bgcolor: 'rgba(255,255,255,0.04)',
+            bar: { color: gaugeColor, thickness: 0.65 },
+            bgcolor: theme.gridColor,
             borderwidth: 0,
             steps: [
-                { range: [0, maxVal * 0.33], color: 'rgba(255,255,255,0.02)' },
-                { range: [maxVal * 0.33, maxVal * 0.66], color: 'rgba(255,255,255,0.04)' },
-                { range: [maxVal * 0.66, maxVal], color: 'rgba(255,255,255,0.06)' },
+                { range: [0, maxVal * 0.33], color: 'rgba(0,0,0,0.02)' },
+                { range: [maxVal * 0.33, maxVal * 0.66], color: 'rgba(0,0,0,0.04)' },
+                { range: [maxVal * 0.66, maxVal], color: 'rgba(0,0,0,0.06)' },
             ],
         },
     }];
 
     const layout = {
-        ...DARK_LAYOUT,
-        height: 220,
-        margin: { t: 60, r: 20, b: 10, l: 20 },
+        paper_bgcolor: theme.paper_bgcolor,
+        plot_bgcolor: theme.plot_bgcolor,
+        font: theme.font,
+        height: 200,
+        margin: { t: 40, r: 24, b: 10, l: 24 },
     };
 
     Plotly.newPlot(el, data, layout, PLOTLY_CONFIG);
 }
 
 /**
- * Show loading overlay.
+ * Show loading overlay with message.
  */
 function showLoading(message) {
     let overlay = document.getElementById('loading-overlay');
@@ -192,7 +221,7 @@ function hideLoading() {
 }
 
 /**
- * Attach form loading on submit.
+ * Form submission loading handler
  */
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form[data-loading]');
