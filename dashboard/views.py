@@ -465,3 +465,34 @@ def run_sample_batch(request):
         return redirect("dashboard:batch_report")
 
 
+def download_sample_images(request):
+    """
+    Bundles available sample steel surface images into a ZIP archive for download.
+    """
+    import io
+    import zipfile
+
+    try:
+        sample_images = _get_or_create_sample_images()
+        if not sample_images:
+            messages.error(request, "No sample images available to download.")
+            return redirect("dashboard:batch_report")
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for idx, img_path in enumerate(sample_images, start=1):
+                if Path(img_path).exists():
+                    arcname = f"sample_steel_{idx:02d}_{Path(img_path).name}"
+                    zip_file.write(img_path, arcname=arcname)
+
+        buffer.seek(0)
+        response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = 'attachment; filename="smarttrace_sample_steel_images.zip"'
+        return response
+
+    except Exception as e:
+        messages.error(request, f"Could not generate sample ZIP: {str(e)}")
+        return redirect("dashboard:batch_report")
+
+
+

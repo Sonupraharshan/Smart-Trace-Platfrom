@@ -32,6 +32,30 @@
             </div>
         </div>
 
+        <!-- Workspace Guidance -->
+        <div class="content-card mt-3" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div class="card-header">
+                <h3><i class="bi bi-question-circle" style="color: #60a5fa;"></i> How Single Inspection Works</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small text-muted mb-0 d-flex flex-column gap-2">
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-cpu text-primary mt-1"></i>
+                        <span><strong>Deep Learning Classification:</strong> Evaluates steel surface images for 4 defect classes (Pitted Surface, Inclusion, Scratches, Patches).</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-eye text-success mt-1"></i>
+                        <span><strong>Grad-CAM Heatmaps:</strong> Highlights exact visual regions triggering model defect detection.</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-diagram-3 text-purple mt-1"></i>
+                        <span><strong>FAISS Root Cause Matching:</strong> Queries 8,000+ vector embeddings using FAISS to match similar historical defects.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+
         {% if result and not result.error %}
         <!-- Quick Actions -->
         <div class="content-card mt-3">
