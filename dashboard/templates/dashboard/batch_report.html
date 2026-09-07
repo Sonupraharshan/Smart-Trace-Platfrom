@@ -98,6 +98,17 @@
                     {% endfor %}
                 </ul>
             </div>
+            {% if previous_batches %}
+            <div class="card-footer py-2 px-3" style="background: rgba(15, 23, 42, 0.5); border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                <form method="POST" action="{% url 'dashboard:clear_history' %}" onsubmit="return confirm('Are you sure you want to clear all previous readings and batch reports?');" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 d-flex justify-content-center align-items-center gap-2">
+                        <i class="bi bi-trash3"></i>
+                        <span>Clear All Previous Readings</span>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 

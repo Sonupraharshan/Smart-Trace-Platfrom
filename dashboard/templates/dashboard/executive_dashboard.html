@@ -282,6 +282,20 @@
       </table>
     </div>
   </div>
+  {% if recent_inspections %}
+  <div class="card-footer d-flex justify-content-between align-items-center py-3 px-4" style="background: rgba(15, 23, 42, 0.5); border-top: 1px solid rgba(255, 255, 255, 0.05);">
+    <span class="text-muted small">
+      <i class="bi bi-info-circle me-1 text-primary"></i> Showing latest inspection readings log
+    </span>
+    <form method="POST" action="{% url 'dashboard:clear_history' %}" onsubmit="return confirm('Are you sure you want to clear all previous readings? This will permanently delete all inspection logs and batch reports.');" class="m-0">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+        <i class="bi bi-trash3-fill"></i>
+        <span>Clear All Previous Readings</span>
+      </button>
+    </form>
+  </div>
+  {% endif %}
 </div>
 
 <!-- System Maintenance & History Reset Footer Card -->
@@ -297,7 +311,7 @@
     </div>
     <form method="POST" action="{% url 'dashboard:clear_history' %}" onsubmit="return confirm('Are you sure you want to delete all previous inspection readings and batch reports? This cannot be undone.');">
       {% csrf_token %}
-      <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+      <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center gap-2">
         <i class="bi bi-trash3-fill"></i>
         <span>Clear All Previous Readings</span>
       </button>
