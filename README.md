@@ -2,10 +2,10 @@
 
 > An industrial Vision AI platform for automated steel surface defect detection, severity analysis, explainable AI, and quality analytics.
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Smart)](https://smart-trace-platfrom.onrender.com/)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red)
 ![Django](https://img.shields.io/badge/Django-4.2+-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
