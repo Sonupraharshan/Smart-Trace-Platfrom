@@ -24,6 +24,9 @@ media/
 data/*
 !data/faiss_gallery/
 !data/faiss_gallery/**
+!data/sample_batch/
+!data/sample_batch/**
+
 saved_models/*
 !saved_models/resnet50_classifier.pth
 !saved_models/resnet50_classifier.onnx
