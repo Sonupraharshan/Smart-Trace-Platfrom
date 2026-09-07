@@ -70,27 +70,20 @@ class InferenceEngine:
         self._load_search_engine()
 
     def _load_model(self):
-        """Load ML models — prefer ONNX, fall back to PyTorch or Fallback mode."""
+        """Load ML models — prefer ONNX, fall back to PyTorch."""
 
         # ── Try ONNX first ──
         if ONNX_ACTIVATIONS_PATH.exists():
-            try:
-                self._load_onnx()
-                return
-            except Exception as e:
-                print(f"[InferenceEngine] ONNX Runtime loading failed: {e}")
+            self._load_onnx()
+            return
 
         # ── Fall back to PyTorch ──
-        if MODEL_PATH.exists():
-            try:
-                self._load_pytorch()
-                return
-            except Exception as e:
-                print(f"[InferenceEngine] PyTorch loading failed: {e}")
+        if MODEL_PATH.exists() or True:  # Allow untrained demo mode
+            self._load_pytorch()
+            return
 
-        print("[InferenceEngine] Using resilient fallback inspection engine.")
-        self.backend = "fallback"
-        self._model_loaded = True
+        print("[InferenceEngine] WARNING: No model files found. "
+              "Engine will not be able to run inference.")
 
     def _load_onnx(self):
         """Load ONNX Runtime sessions."""
@@ -98,7 +91,7 @@ class InferenceEngine:
 
         print("[InferenceEngine] Loading ONNX Runtime backend...")
 
-        # Use CPU execution provider
+        # Use CPU execution provider (Vercel has no GPU)
         providers = ["CPUExecutionProvider"]
 
         # Activations model (logits + layer4 activations for saliency)
@@ -119,9 +112,7 @@ class InferenceEngine:
             from ml_pipeline.explainability.gradcam import GradCAM
             from ml_pipeline.data.augmentations import get_val_transforms
         except ImportError:
-            print("[InferenceEngine] PyTorch not available.")
-            self.backend = "fallback"
-            self._model_loaded = True
+            print("[InferenceEngine] PyTorch not available and no ONNX models found.")
             return
 
         device = DEVICE
@@ -130,9 +121,8 @@ class InferenceEngine:
 
         if not model_path.exists():
             print(f"[InferenceEngine] WARNING: Model not found at {model_path}")
-            self.backend = "fallback"
-            self._model_loaded = True
-            return
+            print("[InferenceEngine] Running in DEMO mode with untrained model.")
+            model = SteelDefectClassifier(pretrained=True)
         else:
             print(f"[InferenceEngine] Loading PyTorch model from {model_path}")
             model = SteelDefectClassifier(pretrained=False)
@@ -163,121 +153,52 @@ class InferenceEngine:
 
     def _load_search_engine(self):
         """Load the FAISS similarity search engine."""
-        try:
-            self.search_engine = SimilaritySearchEngine()
-            if self.search_engine.is_loaded:
-                print("[InferenceEngine] FAISS search engine ready.")
-            else:
-                print("[InferenceEngine] WARNING: FAISS index not found.")
-        except Exception as e:
-            print(f"[InferenceEngine] FAISS index load warning: {e}")
-            self.search_engine = SimilaritySearchEngine()
+        self.search_engine = SimilaritySearchEngine()
+        if self.search_engine.is_loaded:
+            print("[InferenceEngine] FAISS search engine ready.")
+        else:
+            print("[InferenceEngine] WARNING: FAISS index not found. "
+                  "Similarity search disabled.")
 
     # ──────────────────────────────────────────
     # Public API — identical regardless of backend
     # ──────────────────────────────────────────
 
-    def inspect_image(self, image_path: str) -> dict:
+    def inspect_image(
+        self, image_path: str, generate_gradcam: bool = True, find_similar: bool = True
+    ) -> dict:
         """
-        Run full inspection pipeline on a single image.
-        Guaranteed to handle errors gracefully without crashing the server.
-        """
-        try:
-            if self.backend == "onnx":
-                return self._inspect_onnx(image_path)
-            elif self.backend == "pytorch":
-                return self._inspect_pytorch(image_path)
-            else:
-                return self._inspect_fallback(image_path)
-        except Exception as e:
-            print(f"[InferenceEngine] Exception during inspection of {image_path}: {e}")
-            return self._inspect_fallback(image_path, error=str(e))
+        Run inspection pipeline on a single image.
 
-    def _inspect_fallback(self, image_path: str, error: str = None) -> dict:
-        """
-        Fallback inspection pipeline when ML models or native libraries are unavailable.
-        Generates realistic inspection statistics based on image features.
-        """
-        img_name = Path(image_path).name
-        seed = sum(ord(c) for c in img_name)
-        np.random.seed(seed % 10000)
+        Args:
+            image_path: Path to the image file
+            generate_gradcam: Whether to render and save Grad-CAM overlay (set False for fast batch processing)
+            find_similar: Whether to query FAISS similarity index (set False for fast batch processing)
 
-        is_defect = (seed % 10) >= 4
-        if not is_defect:
-            predicted_class = 0
-            confidence = round(float(np.random.uniform(0.85, 0.99)), 4)
-            severity_score = 0.0
-            severity_category = "No Defect"
-            defect_area_pct = 0.0
-            probs = [confidence] + [round((1 - confidence) / 4, 4)] * 4
+        Returns:
+            Dictionary with all inspection results
+        """
+        if self.backend == "onnx":
+            return self._inspect_onnx(
+                image_path, generate_gradcam=generate_gradcam, find_similar=find_similar
+            )
+        elif self.backend == "pytorch":
+            return self._inspect_pytorch(
+                image_path, generate_gradcam=generate_gradcam, find_similar=find_similar
+            )
         else:
-            predicted_class = int((seed % 4) + 1)
-            confidence = round(float(np.random.uniform(0.70, 0.96)), 4)
-            severity_score = round(float(np.random.uniform(2.5, 28.0)), 2)
-
-            if severity_score < 5.0:
-                severity_category = "Low"
-            elif severity_score < 15.0:
-                severity_category = "Medium"
-            else:
-                severity_category = "High"
-
-            defect_area_pct = severity_score
-            rem = (1 - confidence) / 4
-            probs = [round(rem, 4)] * 5
-            probs[predicted_class] = confidence
-
-        gradcam_filename = f"gradcam_{uuid.uuid4().hex[:8]}.png"
-        GRADCAM_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        gradcam_path = str(GRADCAM_OUTPUT_DIR / gradcam_filename)
-
-        try:
-            orig = cv2.imread(image_path)
-            if orig is not None:
-                h, w = orig.shape[:2]
-                overlay = orig.copy()
-                if predicted_class != 0:
-                    cv2.rectangle(
-                        overlay,
-                        (int(w * 0.2), int(h * 0.3)),
-                        (int(w * 0.8), int(h * 0.7)),
-                        (0, 0, 255),
-                        -1,
-                    )
-                combined = cv2.addWeighted(orig, 0.6, overlay, 0.4, 0)
-                cv2.imwrite(gradcam_path, cv2.cvtColor(combined, cv2.COLOR_RGB2BGR))
-        except Exception:
-            pass
-
-        similar_images = []
-        if self.search_engine and self.search_engine.is_loaded:
-            try:
-                dummy_emb = np.random.randn(1, 2048).astype(np.float32)
-                similar_images = self.search_engine.find_similar(dummy_emb)
-            except Exception:
-                pass
-
-        return {
-            "image_path": image_path,
-            "predicted_class": predicted_class,
-            "defect_label": CLASS_NAMES.get(predicted_class, f"Class {predicted_class}"),
-            "confidence": confidence,
-            "all_probabilities": probs,
-            "severity_score": severity_score,
-            "severity_category": severity_category,
-            "defect_area_pct": defect_area_pct,
-            "is_defective": predicted_class != 0,
-            "gradcam_path": gradcam_path,
-            "gradcam_filename": gradcam_filename,
-            "similar_images": similar_images,
-        }
-
+            raise RuntimeError(
+                "No ML backend available. Ensure ONNX models or PyTorch "
+                "model files are present."
+            )
 
     # ──────────────────────────────────────────
     # ONNX Runtime inference path
     # ──────────────────────────────────────────
 
-    def _inspect_onnx(self, image_path: str) -> dict:
+    def _inspect_onnx(
+        self, image_path: str, generate_gradcam: bool = True, find_similar: bool = True
+    ) -> dict:
         """Run inference using ONNX Runtime."""
         from ml_pipeline.data.augmentations import preprocess_image_numpy
         from ml_pipeline.explainability.gradcam import (
@@ -303,36 +224,59 @@ class InferenceEngine:
         predicted_class = prediction_info["predicted_class"]
         confidence = prediction_info["confidence"]
 
-        # 2. Saliency map (activation-based, no gradients)
-        _orig_vis, heatmap, overlay, cam_map = generate_saliency_from_activations(
-            logits=logits,
-            activations=activations,
-            target_class=predicted_class,
-            original_image=original_image,
-        )
+        # 2. Saliency map & Severity
+        gradcam_path = ""
+        gradcam_filename = ""
 
-        # Save saliency overlay
-        gradcam_filename = f"gradcam_{uuid.uuid4().hex[:8]}.png"
-        GRADCAM_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        gradcam_path = str(GRADCAM_OUTPUT_DIR / gradcam_filename)
+        if generate_gradcam:
+            _orig_vis, heatmap, overlay, cam_map = generate_saliency_from_activations(
+                logits=logits,
+                activations=activations,
+                target_class=predicted_class,
+                original_image=original_image,
+            )
 
-        combined = np.vstack([heatmap, overlay])
-        combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(gradcam_path, combined_bgr)
+            # Save saliency overlay
+            gradcam_filename = f"gradcam_{uuid.uuid4().hex[:8]}.png"
+            GRADCAM_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+            gradcam_path = str(GRADCAM_OUTPUT_DIR / gradcam_filename)
 
-        # 3. Severity estimation
-        if predicted_class == 0:
-            severity_info = {
-                "severity_score": 0.0,
-                "severity_category": "No Defect",
-                "defect_area_pct": 0.0,
-            }
+            combined = np.vstack([heatmap, overlay])
+            combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(gradcam_path, combined_bgr)
+
+            if predicted_class == 0:
+                severity_info = {
+                    "severity_score": 0.0,
+                    "severity_category": "No Defect",
+                    "defect_area_pct": 0.0,
+                }
+            else:
+                severity_info = estimate_severity_from_gradcam(cam_map, threshold=0.5)
         else:
-            severity_info = estimate_severity_from_gradcam(cam_map, threshold=0.5)
+            if predicted_class == 0:
+                severity_info = {
+                    "severity_score": 0.0,
+                    "severity_category": "No Defect",
+                    "defect_area_pct": 0.0,
+                }
+            else:
+                act_idx = max(0, min(predicted_class - 1, activations.shape[1] - 1))
+                act_target = activations[0, act_idx]
+                act_norm = (act_target - act_target.min()) / (act_target.max() - act_target.min() + 1e-8)
+                score = float(np.mean(act_norm > 0.5) * 100)
+                sev_cat = "Low" if score < 5.0 else ("Medium" if score < 15.0 else "High")
+                severity_info = {
+                    "severity_score": round(score, 2),
+                    "severity_category": sev_cat,
+                    "defect_area_pct": round(score, 2),
+                }
 
-        # 4. Similarity retrieval
-        embedding = np.mean(activations, axis=(2, 3))
-        similar_images = self.search_engine.find_similar(embedding)
+        # 3. Similarity retrieval
+        similar_images = []
+        if find_similar and self.search_engine:
+            embedding = np.mean(activations, axis=(2, 3))
+            similar_images = self.search_engine.find_similar(embedding)
 
         return {
             "image_path": image_path,
@@ -348,6 +292,7 @@ class InferenceEngine:
             "gradcam_filename": gradcam_filename,
             "similar_images": similar_images,
         }
+
 
     def _extract_embedding_onnx(self, input_tensor: np.ndarray) -> np.ndarray:
         """Extract feature embedding using ONNX activations model (average pooling of activations)."""
@@ -384,7 +329,9 @@ class InferenceEngine:
     # PyTorch inference path (fallback)
     # ──────────────────────────────────────────
 
-    def _inspect_pytorch(self, image_path: str) -> dict:
+    def _inspect_pytorch(
+        self, image_path: str, generate_gradcam: bool = True, find_similar: bool = True
+    ) -> dict:
         """Run inference using PyTorch (original code path)."""
         import torch
 
@@ -403,35 +350,46 @@ class InferenceEngine:
         predicted_class = prediction_info["predicted_class"]
         confidence = prediction_info["confidence"]
 
-        # 2. Grad-CAM
-        _orig_vis, heatmap, overlay, cam_map = self._pt_gradcam.generate(
-            image_tensor,
-            target_class=predicted_class,
-            original_image=original_image,
-        )
+        # 2. Grad-CAM & Severity
+        gradcam_path = ""
+        gradcam_filename = ""
 
-        # Save Grad-CAM overlay
-        gradcam_filename = f"gradcam_{uuid.uuid4().hex[:8]}.png"
-        GRADCAM_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        gradcam_path = str(GRADCAM_OUTPUT_DIR / gradcam_filename)
+        if generate_gradcam:
+            _orig_vis, heatmap, overlay, cam_map = self._pt_gradcam.generate(
+                image_tensor,
+                target_class=predicted_class,
+                original_image=original_image,
+            )
 
-        combined = np.vstack([heatmap, overlay])
-        combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(gradcam_path, combined_bgr)
+            # Save Grad-CAM overlay
+            gradcam_filename = f"gradcam_{uuid.uuid4().hex[:8]}.png"
+            GRADCAM_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+            gradcam_path = str(GRADCAM_OUTPUT_DIR / gradcam_filename)
 
-        # 3. Severity estimation
-        if predicted_class == 0:
-            severity_info = {
-                "severity_score": 0.0,
-                "severity_category": "No Defect",
-                "defect_area_pct": 0.0,
-            }
+            combined = np.vstack([heatmap, overlay])
+            combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(gradcam_path, combined_bgr)
+
+            if predicted_class == 0:
+                severity_info = {
+                    "severity_score": 0.0,
+                    "severity_category": "No Defect",
+                    "defect_area_pct": 0.0,
+                }
+            else:
+                severity_info = estimate_severity_from_gradcam(cam_map, threshold=0.5)
         else:
-            severity_info = estimate_severity_from_gradcam(cam_map, threshold=0.5)
+            severity_info = {
+                "severity_score": 0.0 if predicted_class == 0 else 5.0,
+                "severity_category": "No Defect" if predicted_class == 0 else "Medium",
+                "defect_area_pct": 0.0 if predicted_class == 0 else 5.0,
+            }
 
-        # 4. Similarity retrieval
-        embedding = self._extract_embedding_pytorch(image_tensor)
-        similar_images = self.search_engine.find_similar(embedding)
+        # 3. Similarity retrieval
+        similar_images = []
+        if find_similar and self.search_engine:
+            embedding = self._extract_embedding_pytorch(image_tensor)
+            similar_images = self.search_engine.find_similar(embedding)
 
         return {
             "image_path": image_path,
@@ -447,6 +405,7 @@ class InferenceEngine:
             "gradcam_filename": gradcam_filename,
             "similar_images": similar_images,
         }
+
 
     def _extract_embedding_pytorch(self, image_tensor) -> np.ndarray:
         """Extract feature embedding using PyTorch feature extractor."""

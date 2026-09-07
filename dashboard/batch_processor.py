@@ -47,8 +47,11 @@ def process_batch(image_paths: list, batch_name: str, inference_engine) -> dict:
 
     for path in image_paths:
         try:
-            result = inference_engine.inspect_image(str(path))
+            result = inference_engine.inspect_image(
+                str(path), generate_gradcam=False, find_similar=False
+            )
             results.append(result)
+
 
             if result["is_defective"]:
                 failed += 1
