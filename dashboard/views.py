@@ -518,4 +518,45 @@ def download_sample_images(request):
         return redirect("dashboard:batch_report")
 
 
+def clear_history(request):
+    """
+    Clears all previous inspection results, batch reports, and temporary media files.
+    """
+    if request.method == "POST":
+        try:
+            inspection_count = InspectionResult.objects.count()
+            batch_count = BatchReport.objects.count()
+
+            InspectionResult.objects.all().delete()
+            BatchReport.objects.all().delete()
+
+            # Clean temporary files in media/uploads, media/gradcam_outputs, and reports
+            media_root = Path(settings.MEDIA_ROOT)
+            uploads_dir = media_root / "uploads"
+            gradcam_dir = media_root / "gradcam_outputs"
+            reports_dir = Path(settings.BASE_DIR) / "reports"
+
+            deleted_files = 0
+            for directory in [uploads_dir, gradcam_dir, reports_dir]:
+                if directory.exists():
+                    for item in directory.glob("*"):
+                        if item.is_file():
+                            try:
+                                item.unlink()
+                                deleted_files += 1
+                            except Exception:
+                                pass
+
+            messages.success(
+                request,
+                f"Cleared all previous readings! Purged {inspection_count} inspections, "
+                f"{batch_count} batch reports, and {deleted_files} files."
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to clear history: {str(e)}")
+
+    return redirect("dashboard:executive_dashboard")
+
+
+
 

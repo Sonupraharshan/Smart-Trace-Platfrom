@@ -20,6 +20,8 @@ urlpatterns = [
     path("batch/<int:batch_id>/", views.batch_detail, name="batch_detail"),
     path("batch/sample/", views.run_sample_batch, name="run_sample_batch"),
     path("batch/download-samples/", views.download_sample_images, name="download_sample_images"),
+    path("clear-history/", views.clear_history, name="clear_history"),
 ]
+
 
 
