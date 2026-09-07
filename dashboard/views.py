@@ -334,23 +334,72 @@ def batch_detail(request, batch_id):
     return render(request, "dashboard/batch_detail.html", context)
 
 
+def _get_or_create_sample_images():
+    """
+    Find existing sample images across standard dataset paths,
+    or auto-generate 10 synthetic steel surface sample images if none exist.
+    """
+    base_dir = Path(settings.BASE_DIR)
+    search_dirs = [
+        base_dir / "data" / "sample_batch",
+        base_dir / "data" / "severstal-steel-defect-detection" / "test_images",
+        base_dir / "data" / "severstal-steel-defect-detection" / "train_images",
+        Path(settings.MEDIA_ROOT) / "uploads",
+    ]
+
+    for d in search_dirs:
+        if d.exists() and d.is_dir():
+            found = set()
+            for ext in ("*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"):
+                found.update(d.glob(ext))
+            if found:
+                return sorted(list(found))[:10]
+
+
+    # Fallback: Auto-generate 10 synthetic steel sample images in data/sample_batch
+    target_dir = base_dir / "data" / "sample_batch"
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        import numpy as np
+        from PIL import Image
+
+        generated_images = []
+        np.random.seed(42)
+        for i in range(1, 11):
+            filename = f"sample_steel_{i:02d}.jpg"
+            filepath = target_dir / filename
+            if not filepath.exists():
+                base_color = np.random.randint(120, 180)
+                noise = np.random.normal(0, 15, (256, 1600, 3))
+                steel_img = np.clip(base_color + noise, 0, 255).astype(np.uint8)
+
+                if i % 2 == 0:
+                    y = np.random.randint(50, 200)
+                    steel_img[y : y + 3, 200:800] = 30  # dark scratch defect
+
+                img = Image.fromarray(steel_img)
+                img.save(filepath, quality=90)
+
+            generated_images.append(filepath)
+
+        return generated_images
+    except Exception as e:
+        print(f"[Sample Batch] Fallback image generation warning: {e}")
+
+    return []
+
+
 def run_sample_batch(request):
     """
     Executes a pre-configured sample batch test using standard sample images.
+    Auto-recovers and generates synthetic dataset if no files are found on disk.
     """
     import shutil
 
-    sample_dir = Path(settings.BASE_DIR) / "data" / "sample_batch"
-    if not sample_dir.exists() or not list(sample_dir.glob("*.jpg")):
-        sample_dir = Path(settings.BASE_DIR) / "data" / "severstal-steel-defect-detection" / "test_images"
-
-    if not sample_dir.exists():
-        messages.error(request, "Sample batch image dataset directory not found.")
-        return redirect("dashboard:batch_report")
-
-    sample_images = sorted(list(sample_dir.glob("*.jpg")))[:10]
+    sample_images = _get_or_create_sample_images()
     if not sample_images:
-        messages.error(request, "No sample images available to run sample batch.")
+        messages.error(request, "Unable to locate or generate sample batch images.")
         return redirect("dashboard:batch_report")
 
     upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
@@ -414,4 +463,5 @@ def run_sample_batch(request):
     except Exception as e:
         messages.error(request, f"Sample batch execution failed: {str(e)}")
         return redirect("dashboard:batch_report")
+
 
