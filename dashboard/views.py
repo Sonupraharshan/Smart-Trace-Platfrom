@@ -71,35 +71,57 @@ def inspection_workspace(request):
     """
     Single image upload and inspection page.
     Shows prediction, confidence, severity, and Grad-CAM.
+    Supports 1-click inspection for pre-loaded sample images.
     """
     form = ImageUploadForm()
     result = None
 
     if request.method == "POST":
-        form = ImageUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            uploaded_file = request.FILES["image"]
+        sample_choice = request.POST.get("sample_image_id")
+        file_path = None
+        display_name = ""
 
-            # Save uploaded file
-            upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
-            upload_dir.mkdir(parents=True, exist_ok=True)
+        if sample_choice:
+            sample_images = _get_or_create_sample_images()
+            if sample_choice == "sample_1" and len(sample_images) > 0:
+                target_img = sample_images[0]
+                display_name = "Sample_Defective_Steel.jpg"
+            elif sample_choice == "sample_2" and len(sample_images) > 1:
+                target_img = sample_images[1]
+                display_name = "Sample_Clean_Steel.jpg"
+            else:
+                target_img = sample_images[0] if sample_images else None
+                display_name = "Sample_Steel.jpg"
 
-            filename = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
-            file_path = upload_dir / filename
+            if target_img and Path(target_img).exists():
+                import shutil
+                upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                filename = f"single_sample_{uuid.uuid4().hex[:8]}_{Path(target_img).name}"
+                file_path = upload_dir / filename
+                shutil.copy2(target_img, file_path)
 
-            with open(file_path, "wb+") as f:
-                for chunk in uploaded_file.chunks():
-                    f.write(chunk)
+        elif "image" in request.FILES:
+            form = ImageUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                uploaded_file = request.FILES["image"]
+                upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                filename = f"{uuid.uuid4().hex[:8]}_{uploaded_file.name}"
+                file_path = upload_dir / filename
+                display_name = uploaded_file.name
+                with open(file_path, "wb+") as f:
+                    for chunk in uploaded_file.chunks():
+                        f.write(chunk)
 
+        if file_path and Path(file_path).exists():
             try:
-                # Run inference
                 from ml_pipeline.inference.engine import get_inference_engine
                 engine = get_inference_engine()
-                result = engine.inspect_image(str(file_path))
+                result = engine.inspect_image(str(file_path), generate_gradcam=True, find_similar=True)
 
-                # Save to database
                 inspection = InspectionResult.objects.create(
-                    image_name=uploaded_file.name,
+                    image_name=display_name or Path(file_path).name,
                     image_path=str(file_path),
                     predicted_class=result["predicted_class"],
                     defect_label=result["defect_label"],
@@ -112,15 +134,14 @@ def inspection_workspace(request):
                 )
 
                 result["inspection_id"] = inspection.id
-                result["uploaded_image_url"] = f"{settings.MEDIA_URL}uploads/{filename}"
+                result["uploaded_image_url"] = f"{settings.MEDIA_URL}uploads/{Path(file_path).name}"
 
-                # Grad-CAM URL
                 if result.get("gradcam_filename"):
                     result["gradcam_url"] = (
                         f"{settings.MEDIA_URL}gradcam_outputs/{result['gradcam_filename']}"
                     )
 
-                messages.success(request, "Image inspected successfully!")
+                messages.success(request, f"Image '{display_name}' inspected successfully!")
 
             except Exception as e:
                 messages.error(request, f"Inspection failed: {str(e)}")
@@ -133,6 +154,7 @@ def inspection_workspace(request):
     }
 
     return render(request, "dashboard/inspection_workspace.html", context)
+
 
 
 # ──────────────────────────────────────────────
